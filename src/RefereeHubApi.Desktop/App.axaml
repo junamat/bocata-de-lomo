@@ -1,0 +1,37 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="using:RefereeHubApi.Desktop"
+             x:Class="RefereeHubApi.Desktop.App"
+             RequestedThemeVariant="Dark">
+
+    <Application.DataTemplates>
+        <local:ViewLocator />
+    </Application.DataTemplates>
+
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://RefereeHub/Styles/Palette.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+
+    <Application.Styles>
+        <FluentTheme>
+            <FluentTheme.Palettes>
+                <ColorPaletteResources x:Key="Dark"
+                                       Accent="#9be34a"
+                                       RegionColor="#0d1210"
+                                       AltHigh="#0d1210"
+                                       BaseHigh="#eef3f0"
+                                       ChromeMediumLow="#151b18"
+                                       ChromeLow="#151b18"
+                                       ChromeMedium="#1c2420"
+                                       ChromeHigh="#2a3530"
+                                       ListLow="#1f2824"
+                                       ListMedium="#2a3530" />
+            </FluentTheme.Palettes>
+        </FluentTheme>
+        <StyleInclude Source="avares://RefereeHub/Styles/Theme.axaml" />
+    </Application.Styles>
+</Application>

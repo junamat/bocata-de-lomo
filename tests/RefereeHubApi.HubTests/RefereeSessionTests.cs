@@ -1,11 +1,15 @@
 using Microsoft.AspNetCore.SignalR;
+using RefereeHubApi.Commands;
 using RefereeHubApi.Hub;
+using RefereeHubApi.Journal;
 using RefereeHubApi.Hub.Models;
 using RefereeHubApi.Hub.Models.Events;
 using RefereeHubApi.Hub.Models.Requests;
 using RefereeHubApi.Session;
+using RefereeHubApi.Settings;
 using RefereeHubApi.State;
 using RefereeHubApi.Tests.Infrastructure;
+using RefereeHubApi.Users;
 
 namespace RefereeHubApi.Tests
 {
@@ -110,6 +114,134 @@ namespace RefereeHubApi.Tests
         }
 
         [Fact]
+        public async Task RoomActionsAcceptUsernames()
+        {
+            api.OnJson("GET", "/api/v2/users/@", _ => new { id = TestIds.PLAYER_B, username = "Player B" });
+
+            await using var session = await start();
+            var room = await session.MakeRoomAsync(new MakeRoomRequest { BeatmapId = 75 });
+
+            await room.InviteAsync(UserRef.Parse("Player B"));
+            await room.SetTeamAsync(UserRef.Parse("player_b"), MatchTeam.Red);
+            await Assert.ThrowsAsync<UserNotFoundException>(async () =>
+            {
+                api.On("GET", "/api/v2/users/@nobody", _ => new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.NotFound));
+                await room.KickAsync(UserRef.Parse("nobody"));
+            });
+
+            var calls = server.State.Calls.ToArray();
+            Assert.Contains(calls, c => c.Method == "InvitePlayer" && (int)c.Args[1]! == TestIds.PLAYER_B);
+            Assert.Equal(TestIds.PLAYER_B, ((MoveUserRequest)calls.Single(c => c.Method == "MoveUser").Args[1]!).UserId);
+            Assert.DoesNotContain("KickPlayer", server.State.MethodNames);
+            Assert.Equal(1, api.Count("GET", "/api/v2/users/@Player"));
+        }
+
+        [Fact]
+        public async Task CommandsDriveTheHub()
+        {
+            await using var session = await start();
+            var output = new List<string>();
+            var ctx = new CommandContext
+            {
+                Session = session,
+                Output = output.Add,
+                Settings = new RefereeSettings { Macros = { ["setup"] = ["type tv", "lock", "invite #100", "map 129891 0"] } },
+            };
+
+            await CommandTable.Default.ExecuteAsync("make 75 0 TEST: (A) vs (B)", ctx);
+            Assert.Equal("TEST: (A) vs (B)", ctx.Room!.State.Name);
+
+            await CommandTable.Default.ExecuteAsync("macro setup", ctx);
+            await CommandTable.Default.ExecuteAsync("state", ctx);
+
+            var methods = server.State.MethodNames.SkipWhile(m => m != "MakeRoom").Skip(1).ToArray();
+            Assert.Equal(["ChangeRoomSettings", "SetLockState", "InvitePlayer", "EditCurrentPlaylistItem"], methods);
+            Assert.Contains(output, o => o.StartsWith($"Room {ctx.Room.RoomId} 'TEST: (A) vs (B)'"));
+        }
+
+        [Fact]
+        public async Task MacroMayPrivateMessageOnlyOneUser()
+        {
+            api.OnJson("GET", "/api/v2/users/@", r => new { id = r.RequestUri!.AbsolutePath.EndsWith("alias") ? TestIds.PLAYER_A : TestIds.PLAYER_B, username = "x" });
+
+            await using var session = await start();
+            var ctx = new CommandContext
+            {
+                Session = session,
+                Settings = new RefereeSettings
+                {
+                    Macros =
+                    {
+                        ["two"] = ["lock", $"pm #{TestIds.PLAYER_A} hi", $"pm #{TestIds.PLAYER_B} hi"],
+                        ["same"] = ["lock", $"pm #{TestIds.PLAYER_A} hi", "pm alias hi again"],
+                    },
+                },
+            };
+            await CommandTable.Default.ExecuteAsync("make 75 0 x", ctx);
+
+            var ex = await Assert.ThrowsAsync<CommandException>(() => CommandTable.Default.ExecuteAsync("macro two", ctx));
+            Assert.Contains("only message one", ex.Message);
+            Assert.DoesNotContain("SetLockState", server.State.MethodNames);
+
+            // same user by id and by name passes validation; chat is off in these tests, so the send itself fails.
+            await Assert.ThrowsAsync<InvalidOperationException>(() => CommandTable.Default.ExecuteAsync("macro same", ctx));
+            Assert.Contains("SetLockState", server.State.MethodNames);
+        }
+
+        [Fact]
+        public async Task JournalRecordsUntilRoomEndsAndIsOnlyHistory()
+        {
+            var dir = Directory.CreateTempSubdirectory("refereehub-journal-");
+
+            try
+            {
+                var journal = new RoomJournal(dir.FullName);
+
+                // left over from an earlier run: its chat is history, its snapshot must not become live state.
+                await journal.SaveAsync(new RoomJournalEntry
+                {
+                    RoomId = 7,
+                    Name = "stale name",
+                    Snapshot = new RoomSnapshot { RoomId = 7, Name = "stale name" },
+                    Chat = [new Api.ChatMessage { MessageId = 1, ChannelId = 555, SenderId = TestIds.PLAYER_A, Content = "before restart" }],
+                });
+
+                server.State.ListedRooms.Add(7);
+                await using var session = await start(o =>
+                {
+                    o.Journal = journal;
+                    o.JournalSaveDelay = TimeSpan.FromMilliseconds(10);
+                });
+
+                var room = session.GetRoom(7)!;
+                Assert.Equal("TEST: (Red) vs (Blue)", room.State.Name);
+                Assert.Equal("before restart", Assert.Single(room.Transcript.Messages).Content);
+
+                await server.SendAsync("UserJoined", new UserJoinedEvent { RoomId = 7, UserId = TestIds.PLAYER_A });
+                await Wait.Until(() => journal.LoadAsync(7).Result?.Snapshot?.Players.ContainsKey(TestIds.PLAYER_A) == true);
+
+                var saved = (await journal.LoadAsync(7))!;
+                Assert.Equal("TEST: (Red) vs (Blue)", saved.Name);
+                Assert.Equal(string.Empty, saved.Snapshot!.Password);
+                Assert.Equal("before restart", Assert.Single(saved.Chat).Content);
+
+                // a second room stays in the journal after the session goes away.
+                var other = await session.MakeRoomAsync(new MakeRoomRequest { BeatmapId = 75 }, ignoreRoomLimit: true);
+
+                await server.SendAsync("UserKicked", new UserKickedEvent { RoomId = 7, KickedUserId = TestIds.SELF, KickingUserId = TestIds.OTHER_REF });
+                await Wait.Until(() => journal.LoadAsync(7).Result == null);
+
+                await session.DisposeAsync();
+                Assert.Equal([other.RoomId], (await journal.ListAsync()).Select(e => e.RoomId));
+                Assert.DoesNotContain("JoinRoom", server.State.MethodNames.SkipWhile(m => m != "MakeRoom"));
+            }
+            finally
+            {
+                dir.Delete(recursive: true);
+            }
+        }
+
+        [Fact]
         public async Task HubErrorsAreMapped()
         {
             await using var session = await start();
@@ -189,6 +321,10 @@ namespace RefereeHubApi.Tests
             Assert.Equal(2, r.ExpectedScoreCount);
             Assert.Equal(MatchTeam.Blue, r.Match!.Teams[TestIds.PLAYER_B]);
             Assert.Equal(900000, r.Scores.Single(s => s.UserId == TestIds.PLAYER_A).TotalScore);
+
+            var logged = Assert.Single(room.Transcript.Results);
+            Assert.Equal(75, logged.BeatmapId);
+            Assert.Contains("-- result: playlist item 1, beatmap 75", room.ExportLog());
         }
 
         [Fact]

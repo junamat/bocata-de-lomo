@@ -19,6 +19,13 @@ namespace RefereeHubApi.Chat
         Polling,
     }
 
+    public enum ChatChannelKind
+    {
+        Room,
+
+        Private,
+    }
+
     public sealed class ChatClientOptions
     {
         public static readonly Uri PRODUCTION_NOTIFY_URL = new Uri("wss://notify.ppy.sh");
@@ -58,6 +65,9 @@ namespace RefereeHubApi.Chat
         private readonly TimeProvider time;
         private readonly ILogger logger;
         private readonly ConcurrentDictionary<long, ChatChannel> channels = new ConcurrentDictionary<long, ChatChannel>();
+        private readonly ConcurrentDictionary<int, ChatChannel> privateChannels = new ConcurrentDictionary<int, ChatChannel>();
+        private readonly Subject<ChatChannel> privateChannelOpened = new Subject<ChatChannel>();
+        private readonly SemaphoreSlim privateOpenLock = new SemaphoreSlim(1, 1);
         private readonly BehaviorSubject<ChatTransport> transport = new BehaviorSubject<ChatTransport>(ChatTransport.Starting);
         private readonly CancellationTokenSource cts = new CancellationTokenSource();
         private readonly object startLock = new object();
@@ -84,6 +94,14 @@ namespace RefereeHubApi.Chat
 
         public IReadOnlyCollection<ChatChannel> Channels => channels.Values.ToArray();
 
+        public IReadOnlyCollection<ChatChannel> PrivateChannels => privateChannels.Values.ToArray();
+
+        // a PM channel became known: we sent the first message, or someone messaged us (websocket only; polling can't discover new PMs).
+        // fires before the channel's first message is delivered, so NewMessages subscribers see it.
+        public IObservable<ChatChannel> PrivateChannelOpened => privateChannelOpened.AsObservable();
+
+        public ChatChannel? GetPrivateChannel(int userId) => privateChannels.GetValueOrDefault(userId);
+
         public async Task<ChatChannel> OpenChannelAsync(long channelId, CancellationToken cancellationToken = default)
         {
             if (channels.TryGetValue(channelId, out var existing))
@@ -99,7 +117,7 @@ namespace RefereeHubApi.Chat
                 logger.LogWarning("Could not join chat channel {Channel}: {Message}", channelId, ex.Message);
             }
 
-            var channel = new ChatChannel(channelId, this, options.ReplayBufferSize);
+            var channel = new ChatChannel(channelId, ChatChannelKind.Room, null, this, options.ReplayBufferSize);
             channel = channels.GetOrAdd(channelId, channel);
 
             var history = await api.GetChannelMessagesAsync(channelId, null, 50, cancellationToken).ConfigureAwait(false);
@@ -111,8 +129,61 @@ namespace RefereeHubApi.Chat
 
         public void CloseChannel(long channelId)
         {
-            if (channels.TryRemove(channelId, out var channel))
-                channel.Complete();
+            if (!channels.TryRemove(channelId, out var channel))
+                return;
+
+            if (channel.PeerUserId is int peer)
+                privateChannels.TryRemove(new KeyValuePair<int, ChatChannel>(peer, channel));
+
+            channel.Complete();
+        }
+
+        // one recipient per call, only on an explicit request from the ref; nothing in the library sends PMs on its own.
+        public async Task<ChatMessage> SendPrivateMessageAsync(int userId, string message, bool isAction = false, CancellationToken cancellationToken = default)
+        {
+            if (userId == selfUserId)
+                throw new ArgumentException("Can't send a private message to yourself.", nameof(userId));
+
+            if (privateChannels.TryGetValue(userId, out var known))
+                return await known.SendAsync(message, isAction, cancellationToken).ConfigureAwait(false);
+
+            await privateOpenLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+
+            try
+            {
+                if (privateChannels.TryGetValue(userId, out known))
+                    return await known.SendAsync(message, isAction, cancellationToken).ConfigureAwait(false);
+
+                var response = await api.CreatePrivateChatAsync(userId, message, isAction, Guid.NewGuid().ToString(), cancellationToken).ConfigureAwait(false);
+                var channel = registerPrivate(response.Channel.ChannelId, userId);
+                channel.Deliver([response.Message]);
+                return response.Message;
+            }
+            finally
+            {
+                privateOpenLock.Release();
+            }
+        }
+
+        private ChatChannel registerPrivate(long channelId, int peerUserId)
+        {
+            bool created = false;
+
+            var channel = channels.GetOrAdd(channelId, id =>
+            {
+                created = true;
+                return new ChatChannel(id, ChatChannelKind.Private, peerUserId, this, options.ReplayBufferSize);
+            });
+
+            privateChannels[peerUserId] = channel;
+
+            if (created)
+            {
+                privateChannelOpened.OnNext(channel);
+                ensureStarted();
+            }
+
+            return channel;
         }
 
         internal async Task<ChatMessage> SendAsync(ChatChannel channel, string message, bool isAction, CancellationToken cancellationToken)
@@ -230,13 +301,31 @@ namespace RefereeHubApi.Chat
                     foreach (var group in payload.Messages.GroupBy(m => m.ChannelId))
                     {
                         if (!channels.TryGetValue(group.Key, out var channel))
-                            continue;
+                        {
+                            // room channels are opened explicitly and public ones are out of scope, so an unknown
+                            // channel here is a PM. ours from another client (sender = self) can't tell us the peer.
+                            int? peer = group.Select(m => m.SenderId).Cast<int?>().FirstOrDefault(id => id != selfUserId);
+                            if (peer == null)
+                                continue;
+
+                            channel = registerPrivate(group.Key, peer.Value);
+                        }
 
                         foreach (var m in group)
                             m.Sender ??= users.GetValueOrDefault(m.SenderId);
 
                         channel.Deliver(group);
                     }
+
+                    return true;
+                }
+
+                case "chat.channel.join" when message.Data is JsonElement data:
+                {
+                    var joined = data.Deserialize<ApiChatChannel>(json_options);
+
+                    if (joined is { Type: "PM", Users: { } users } && users.FirstOrDefault(u => u != selfUserId) is int peer and > 0)
+                        registerPrivate(joined.ChannelId, peer);
 
                     return true;
                 }
@@ -377,6 +466,8 @@ namespace RefereeHubApi.Chat
                 channel.Complete();
 
             channels.Clear();
+            privateChannels.Clear();
+            privateChannelOpened.OnCompleted();
             transport.OnCompleted();
             transport.Dispose();
             cts.Dispose();
@@ -408,18 +499,30 @@ namespace RefereeHubApi.Chat
     {
         private readonly ChatClient client;
         private readonly ReplaySubject<ChatMessage> messages;
+        private readonly Subject<ChatMessage> newMessages = new Subject<ChatMessage>();
         private readonly HashSet<long> seen = new HashSet<long>();
         private readonly object sync = new object();
 
         public long ChannelId { get; }
 
+        public ChatChannelKind Kind { get; }
+
+        // the other user, for private channels.
+        public int? PeerUserId { get; }
+
         public long? LastMessageId { get; private set; }
 
+        // replays recent history (up to the replay buffer size) to each new subscriber.
         public IObservable<ChatMessage> Messages => messages.AsObservable();
 
-        internal ChatChannel(long channelId, ChatClient client, int replayBufferSize)
+        // only messages delivered after subscribing; no history.
+        public IObservable<ChatMessage> NewMessages => newMessages.AsObservable();
+
+        internal ChatChannel(long channelId, ChatChannelKind kind, int? peerUserId, ChatClient client, int replayBufferSize)
         {
             ChannelId = channelId;
+            Kind = kind;
+            PeerUserId = peerUserId;
             this.client = client;
             messages = new ReplaySubject<ChatMessage>(replayBufferSize);
         }
@@ -443,6 +546,7 @@ namespace RefereeHubApi.Chat
 
                     fresh.Add(m);
                     messages.OnNext(m);
+                    newMessages.OnNext(m);
                 }
             }
 
@@ -452,7 +556,10 @@ namespace RefereeHubApi.Chat
         internal void Complete()
         {
             lock (sync)
+            {
                 messages.OnCompleted();
+                newMessages.OnCompleted();
+            }
         }
     }
 }

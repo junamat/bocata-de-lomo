@@ -1,0 +1,256 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:RefereeHubApi.Desktop.ViewModels"
+             xmlns:c="using:RefereeHubApi.Desktop.Controls"
+             x:Class="RefereeHubApi.Desktop.Views.RoomsView"
+             x:DataType="vm:RoomsViewModel">
+    <Panel>
+        <c:TriangleField Seed="11" BiasX="0.3" />
+        <ScrollViewer>
+            <StackPanel Margin="28,14,28,24" Spacing="14">
+
+                <!-- added as referee -->
+                <Border IsVisible="{Binding HasInvite}" Background="{StaticResource Card}" CornerRadius="10" Padding="16,10"
+                        BorderBrush="{StaticResource Accent}" BorderThickness="2">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6">
+                            <Button Theme="{StaticResource Skew}" Background="{StaticResource Accent}" Foreground="{StaticResource AccentFg}"
+                                    FontWeight="ExtraBold" Content="Join" Command="{Binding JoinInviteCommand}" />
+                            <Button Theme="{StaticResource Icon}" Width="34" Height="34" AutomationProperties.Name="Dismiss" Command="{Binding DismissInviteCommand}">
+                                <c:Icon Kind="close" Width="14" Height="14" StrokeWidth="2.5" />
+                            </Button>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                            <c:Icon Kind="shield" Width="18" Height="18" Foreground="{StaticResource Accent}" />
+                            <TextBlock Text="Added as referee" FontWeight="Bold" />
+                            <TextBlock Classes="mono" Text="{Binding InvitedRoomId, StringFormat='#{0}'}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <Border IsVisible="{Binding HasConnectError}" Background="{StaticResource ErrorBg}" CornerRadius="10" Padding="16,10">
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Theme="{StaticResource Skew}" Background="{StaticResource DangerFg}" Content="Retry" Command="{Binding RetryCommand}" />
+                        <StackPanel Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Text="Couldn't connect to the referee hub" FontWeight="Bold" Foreground="{StaticResource ErrorPale}" />
+                            <TextBlock Classes="mono" Text="{Binding ConnectError}" Foreground="{StaticResource ErrorFg}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center"
+                                ToolTip.Tip="{Binding OpenLabel}">
+                        <TextBlock Classes="display" FontSize="34" FontWeight="Normal" VerticalAlignment="Center">
+                            <Run Text="{Binding OpenCount}" /><Run Text="/4" FontSize="16" Foreground="{StaticResource Muted}" />
+                        </TextBlock>
+                        <ItemsControl ItemsSource="{Binding LimitPips}" VerticalAlignment="Center">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" Spacing="4" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="IBrush">
+                                    <Border Classes="skew" Width="22" Height="12" Background="{Binding}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                    <TextBlock Text="Your rooms" FontSize="30" FontWeight="SemiBold" />
+                </DockPanel>
+
+                <Grid ColumnDefinitions="*,400" ColumnSpacing="14">
+                    <StackPanel Grid.Column="0" Spacing="14">
+                        <Border Classes="card" IsVisible="{Binding !HasRooms}" Padding="18,22">
+                            <TextBlock Classes="muted" Text="No open rooms. Make one on the right, or wait for an invite as referee." TextWrapping="Wrap" />
+                        </Border>
+                        <ItemsControl ItemsSource="{Binding Rooms}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Spacing="8" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:RoomCardViewModel">
+                                    <Border Classes="card" Padding="0,0,12,0">
+                                        <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="14">
+                                            <Border Grid.Column="0" Background="{Binding StateBrush}" Width="96" Margin="-6,0,0,0">
+                                                <Border.RenderTransform>
+                                                    <SkewTransform AngleX="-12" />
+                                                </Border.RenderTransform>
+                                                <TextBlock Text="{Binding StateText}" Foreground="{Binding StateForeground}" FontSize="11" FontWeight="ExtraBold"
+                                                           LetterSpacing="0.8" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                    <TextBlock.RenderTransform>
+                                                        <SkewTransform AngleX="12" />
+                                                    </TextBlock.RenderTransform>
+                                                </TextBlock>
+                                            </Border>
+                                            <StackPanel Grid.Column="1" Spacing="4" Margin="0,12">
+                                                <TextBlock Text="{Binding Name}" FontSize="17" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                                <StackPanel Orientation="Horizontal" Spacing="14">
+                                                    <TextBlock Classes="mono" Text="{Binding Id, StringFormat='#{0}'}" VerticalAlignment="Center" />
+                                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                                        <c:Icon Kind="users" Width="13" Height="13" Foreground="{StaticResource Muted}" VerticalAlignment="Center" />
+                                                        <TextBlock Text="{Binding PlayersText}" FontSize="12" Foreground="{StaticResource Text2}" />
+                                                    </StackPanel>
+                                                    <StackPanel Orientation="Horizontal" Spacing="5" IsVisible="{Binding HasMap}">
+                                                        <Border Classes="chip" IsVisible="{Binding HasMod}" Background="{StaticResource Yellow}" Padding="5,0">
+                                                            <TextBlock Text="{Binding ModText}" Foreground="#111" />
+                                                        </Border>
+                                                        <TextBlock Text="{Binding MapText}" FontSize="12" Foreground="{StaticResource Text2}" MaxWidth="260" TextTrimming="CharacterEllipsis" />
+                                                    </StackPanel>
+                                                    <StackPanel Orientation="Horizontal" Spacing="5" IsVisible="{Binding HasTimer}">
+                                                        <c:Icon Kind="timer" Width="13" Height="13" Foreground="{StaticResource TimerFg}" VerticalAlignment="Center" />
+                                                        <TextBlock Text="{Binding TimerText}" FontSize="12" Foreground="{StaticResource TimerFg}" />
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </StackPanel>
+                                            <Button Grid.Column="2" Theme="{StaticResource Skew}" Background="{StaticResource Accent}" Foreground="{StaticResource AccentFg}"
+                                                    FontWeight="ExtraBold" MinHeight="40" Padding="22,0" VerticalAlignment="Center" Content="Open" Command="{Binding OpenCommand}" />
+                                            <Button Grid.Column="3" Theme="{StaticResource Icon}" Width="36" Height="36" Background="{StaticResource ErrorBg}"
+                                                    Foreground="{StaticResource ErrorFg}" VerticalAlignment="Center" ToolTip.Tip="Close room"
+                                                    AutomationProperties.Name="{Binding Name, StringFormat='Close {0}'}">
+                                                <c:Icon Kind="close" Width="15" Height="15" StrokeWidth="2.5" />
+                                                <Button.Flyout>
+                                                    <Flyout>
+                                                        <StackPanel Spacing="10" Width="240">
+                                                            <TextBlock Text="Close this room for everyone?" FontWeight="Bold" TextWrapping="Wrap" />
+                                                            <Button Theme="{StaticResource Skew}" Background="{StaticResource Danger}" Foreground="{StaticResource DangerFg}"
+                                                                    FontWeight="ExtraBold" Content="Close room" Command="{Binding CloseCommand}" />
+                                                        </StackPanel>
+                                                    </Flyout>
+                                                </Button.Flyout>
+                                            </Button>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <StackPanel Spacing="8" IsVisible="{Binding HasJournal}">
+                            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+                                <c:Icon Kind="history" Foreground="{StaticResource Yellow}" />
+                                <TextBlock Classes="section" Text="UNFINISHED ROOMS" />
+                            </StackPanel>
+                            <ItemsControl ItemsSource="{Binding Journal}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Spacing="6" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:JournalEntryViewModel">
+                                        <Border Classes="card" Padding="16,10" BorderBrush="#33ffcc33" BorderThickness="1">
+                                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                <StackPanel Spacing="3">
+                                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                                    <StackPanel Orientation="Horizontal" Spacing="12">
+                                                        <TextBlock Classes="mono" Text="{Binding Id, StringFormat='#{0}'}" />
+                                                        <StackPanel Orientation="Horizontal" Spacing="4" ToolTip.Tip="Chat lines">
+                                                            <c:Icon Kind="chat" Width="12" Height="12" Foreground="{StaticResource Muted}" VerticalAlignment="Center" />
+                                                            <TextBlock Text="{Binding ChatText}" FontSize="12" Foreground="{StaticResource Muted}" />
+                                                        </StackPanel>
+                                                        <StackPanel Orientation="Horizontal" Spacing="4" ToolTip.Tip="Map results">
+                                                            <c:Icon Kind="bars" Width="12" Height="12" Foreground="{StaticResource Muted}" VerticalAlignment="Center" />
+                                                            <TextBlock Text="{Binding ResultsText}" FontSize="12" Foreground="{StaticResource Muted}" />
+                                                        </StackPanel>
+                                                        <TextBlock Text="{Binding SavedText}" FontSize="12" Foreground="{StaticResource Muted}" />
+                                                    </StackPanel>
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                    <Button Theme="{StaticResource Skew}" IsVisible="{Binding Live}" Background="{StaticResource Yellow}" Foreground="{StaticResource YellowFg}"
+                                                            FontWeight="ExtraBold" Content="Restore" Command="{Binding RestoreCommand}" />
+                                                    <Border Classes="skew" IsVisible="{Binding Gone}" Background="{StaticResource ErrorBg}" Padding="10,3" VerticalAlignment="Center">
+                                                        <TextBlock Text="ROOM GONE" FontSize="10" FontWeight="ExtraBold" Foreground="{StaticResource ErrorFg}" />
+                                                    </Border>
+                                                    <Button Theme="{StaticResource Skew}" IsVisible="{Binding Gone}" Content="Save log" Command="{Binding SaveLogCommand}" />
+                                                    <Button Theme="{StaticResource Skew}" Background="{StaticResource Chip}" Content="Discard" Command="{Binding DiscardCommand}" />
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- make room -->
+                    <Border Grid.Column="1" Classes="card" Padding="18,16" VerticalAlignment="Top">
+                        <StackPanel Spacing="12">
+                            <TextBlock Classes="section" Text="MAKE ROOM" />
+                            <StackPanel Spacing="4">
+                                <TextBlock Classes="label" Text="ROOM NAME" />
+                                <TextBox Text="{Binding RoomName}" PlaceholderText="TEST: (Team A) vs (Team B)" AutomationProperties.Name="Room name" />
+                            </StackPanel>
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="label" Text="BEATMAP ID" />
+                                    <TextBox Classes="mono" Text="{Binding BeatmapId}" PlaceholderText="e.g. 129891" AutomationProperties.Name="Beatmap ID" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Spacing="4">
+                                    <TextBlock Classes="label" Text="RULESET" />
+                                    <ItemsControl ItemsSource="{Binding Rulesets}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <StackPanel Orientation="Horizontal" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:RulesetOption">
+                                                <Button Theme="{StaticResource Skew}" MinHeight="38" Padding="9,0" FontSize="11" Background="{Binding Background}"
+                                                        Foreground="{Binding Foreground}" Content="{Binding Name}" Command="{Binding PickCommand}"
+                                                        AutomationProperties.Name="{Binding Name}" />
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Grid>
+                            <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding HasPreview}">
+                                <Border Classes="chip" Background="{StaticResource Star}">
+                                    <TextBlock Text="{Binding PreviewStars}" Foreground="{StaticResource StarFg}" />
+                                </Border>
+                                <TextBlock Text="{Binding PreviewTitle}" FontSize="12" Foreground="{StaticResource Text2}" TextTrimming="CharacterEllipsis" MaxWidth="300" />
+                            </StackPanel>
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="label" Text="TYPE" />
+                                    <ComboBox SelectedIndex="{Binding TypeIndex}" HorizontalAlignment="Stretch" AutomationProperties.Name="Type">
+                                        <ComboBoxItem>Team versus</ComboBoxItem>
+                                        <ComboBoxItem>Head to head</ComboBoxItem>
+                                    </ComboBox>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Spacing="4">
+                                    <TextBlock Classes="label" Text="QUEUE" />
+                                    <ComboBox SelectedIndex="{Binding QueueIndex}" HorizontalAlignment="Stretch" AutomationProperties.Name="Queue">
+                                        <ComboBoxItem>Host only</ComboBoxItem>
+                                        <ComboBoxItem>All players</ComboBoxItem>
+                                        <ComboBoxItem>Round robin</ComboBoxItem>
+                                    </ComboBox>
+                                </StackPanel>
+                            </Grid>
+                            <StackPanel Spacing="4">
+                                <TextBlock Classes="label" Text="MAX PLAYERS" />
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                    <Slider Minimum="1" Maximum="16" TickFrequency="1" IsSnapToTickEnabled="True" Value="{Binding Size}"
+                                            AutomationProperties.Name="Max players" />
+                                    <TextBlock Grid.Column="1" Classes="display" Text="{Binding SizeLabel}" FontSize="22" FontWeight="Medium" Width="30"
+                                               VerticalAlignment="Center" TextAlignment="Right" />
+                                </Grid>
+                            </StackPanel>
+                            <Border IsVisible="{Binding AtLimit}" Background="{StaticResource ErrorBg}" CornerRadius="8" Padding="12,8">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <c:Icon Kind="warn" Foreground="{StaticResource ErrorFg}" />
+                                    <TextBlock Text="Room limit reached" FontWeight="Bold" Foreground="{StaticResource ErrorPale}" />
+                                </StackPanel>
+                            </Border>
+                            <Button Theme="{StaticResource Skew}" HorizontalAlignment="Stretch" Margin="8,0" MinHeight="52" Background="{StaticResource Go}"
+                                    Foreground="{StaticResource GoFg}" FontWeight="ExtraBold" FontSize="16" Content="{Binding MakeLabel}"
+                                    Command="{Binding MakeRoomCommand}" IsEnabled="{Binding !Making}" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </StackPanel>
+        </ScrollViewer>
+    </Panel>
+</UserControl>

@@ -1,0 +1,126 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:RefereeHubApi.Desktop.ViewModels"
+             xmlns:c="using:RefereeHubApi.Desktop.Controls"
+             x:Class="RefereeHubApi.Desktop.Views.SetupView"
+             x:DataType="vm:SetupViewModel">
+    <UserControl.Styles>
+        <Style Selector="Border.step">
+            <Setter Property="Background" Value="#EB151B18" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Padding" Value="18,14" />
+        </Style>
+    </UserControl.Styles>
+
+    <Panel>
+        <c:TriangleField Seed="3" BiasX="0.22" />
+        <Grid ColumnDefinitions="*,1.35*">
+            <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="56,48" Spacing="14">
+                <TextBlock Classes="display" FontSize="72" LineHeight="74" Margin="0,0,0,10" Text="bocata de lomo." TextWrapping="Wrap" />
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <c:Icon Kind="lock" Width="18" Height="18" Foreground="{StaticResource Go}" />
+                    <TextBlock Text="Your account, your keys, kept on this computer." Foreground="{StaticResource Text2}" FontSize="15" />
+                </StackPanel>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,48,56,48" Spacing="10" MaxWidth="760">
+                <Border Classes="step">
+                    <StackPanel Spacing="10">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Border Classes="skew" Background="{StaticResource Go}" Padding="10,2">
+                                <TextBlock Text="STEP 1" FontSize="11" FontWeight="ExtraBold" Foreground="{StaticResource GoFg}" />
+                            </Border>
+                            <TextBlock Text="Create an OAuth app on osu!" FontSize="17" FontWeight="SemiBold" />
+                        </StackPanel>
+                        <WrapPanel>
+                            <TextBlock Text="In " Foreground="{StaticResource Text2}" VerticalAlignment="Center" />
+                            <Button Theme="{StaticResource Plain}" Command="{Binding OpenOAuthSettingsCommand}">
+                                <TextBlock Text="account settings › OAuth" Foreground="{StaticResource Teal}" TextDecorations="Underline" />
+                            </Button>
+                            <TextBlock Text=", add a new application with this callback:" Foreground="{StaticResource Text2}" VerticalAlignment="Center" />
+                        </WrapPanel>
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                            <TextBox Grid.Column="0" Classes="mono" IsReadOnly="True" Text="{Binding CallbackUrl}" AutomationProperties.Name="Callback URL" />
+                            <TextBox Grid.Column="1" Classes="mono" Width="72" Text="{Binding Port}" ToolTip.Tip="Callback port"
+                                     AutomationProperties.Name="Callback port" HorizontalContentAlignment="Center" />
+                            <Button Grid.Column="2" Theme="{StaticResource Skew}" Content="Copy" Command="{Binding CopyCallbackCommand}" MinHeight="38" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="step" BorderBrush="{StaticResource Accent}" BorderThickness="2">
+                    <StackPanel Spacing="10">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Border Classes="skew" Background="{StaticResource Accent}" Padding="10,2">
+                                <TextBlock Text="STEP 2" FontSize="11" FontWeight="ExtraBold" Foreground="{StaticResource AccentFg}" />
+                            </Border>
+                            <TextBlock Text="Client credentials" FontSize="17" FontWeight="SemiBold" />
+                        </StackPanel>
+                        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="4">
+                            <TextBlock Grid.Column="0" Classes="label" Text="PROFILE" />
+                            <TextBlock Grid.Column="1" Classes="label" Text="CLIENT ID" />
+                            <TextBlock Grid.Column="2" Classes="label" Text="CLIENT SECRET" />
+                            <TextBox Grid.Row="1" Grid.Column="0" Text="{Binding ProfileName}" AutomationProperties.Name="Profile" />
+                            <TextBox Grid.Row="1" Grid.Column="1" Classes="mono" Text="{Binding ClientId}" PlaceholderText="e.g. 41234" AutomationProperties.Name="Client ID" />
+                            <TextBox Grid.Row="1" Grid.Column="2" Text="{Binding ClientSecret}" PasswordChar="•" PlaceholderText="{Binding SecretWatermark}"
+                                     AutomationProperties.Name="Client secret" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="step">
+                    <StackPanel Spacing="10">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Border Classes="skew" Background="{StaticResource Chip}" Padding="10,2">
+                                <TextBlock Text="STEP 3" FontSize="11" FontWeight="ExtraBold" Foreground="{StaticResource Text2}" />
+                            </Border>
+                            <TextBlock Text="Authorize with osu!" FontSize="17" FontWeight="SemiBold" />
+                        </StackPanel>
+                        <ItemsControl ItemsSource="{Binding Scopes}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel ItemSpacing="4" LineSpacing="4" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="x:String">
+                                    <Border Classes="chip" Padding="8,1">
+                                        <TextBlock Classes="mono" Text="{Binding}" FontSize="11" Foreground="{StaticResource Text}" FontWeight="Normal" />
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <Border IsVisible="{Binding Waiting}" Background="{StaticResource Info}" CornerRadius="10" Padding="18,12">
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Theme="{StaticResource Skew}" Background="{StaticResource Bg}" Content="Cancel" Command="{Binding CancelCommand}" />
+                        <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+                            <c:Icon Kind="browser" Width="20" Height="20" Foreground="{StaticResource InfoFg}" />
+                            <TextBlock Text="Waiting for your browser…" FontWeight="Bold" Foreground="{StaticResource InfoFg}" />
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <Border IsVisible="{Binding HasKeychainError}" Background="{StaticResource ErrorBg}" CornerRadius="10" Padding="18,12">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <c:Icon Kind="lock" Width="20" Height="20" Foreground="{StaticResource ErrorFg}" VerticalAlignment="Top" />
+                        <StackPanel Spacing="2">
+                            <TextBlock Text="No keychain on this system" FontWeight="Bold" Foreground="{StaticResource ErrorPale}" />
+                            <TextBlock Classes="mono" Text="{Binding KeychainError}" Foreground="{StaticResource ErrorFg}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border IsVisible="{Binding HasError}" Background="{StaticResource ErrorBg}" CornerRadius="10" Padding="18,12">
+                    <TextBlock Text="{Binding Error}" Foreground="{StaticResource ErrorPale}" TextWrapping="Wrap" />
+                </Border>
+
+                <Button Theme="{StaticResource Skew}" HorizontalAlignment="Right" Margin="0,8,0,0" MinHeight="52" MinWidth="220" Padding="28,0"
+                        Background="{StaticResource Go}" Foreground="{StaticResource GoFg}" FontWeight="ExtraBold" FontSize="16"
+                        Content="Sign in with osu!" Command="{Binding SignInCommand}" IsEnabled="{Binding CanSignIn}" />
+            </StackPanel>
+        </Grid>
+    </Panel>
+</UserControl>

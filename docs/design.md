@@ -58,9 +58,37 @@ Both intervals are per request, round-robin across open channels, so 4 open room
 
 Lazer only ever wins on score, and the hub's `MatchCompleted` carries no results. After a map finishes we fetch `GET /rooms/{room}/playlist/{item}/scores` a few times (2, 5, 10, 20 s later) until everyone who started the map has a score. The result includes the teams and slots from when the map started, so totals per team can be worked out. Deciding who won the map or the match is left to the ref.
 
+## Users and beatmaps
+
+`UserDirectory` resolves names to ids (`GET /users/@name?key=username`) and keeps every user it has seen for the session, including chat senders and score owners. Spaces and underscores in names are treated as the same character, like osu! does. Ids are fetched in batches of 50, and a name or id that doesn't exist is remembered for a minute, so nothing gets requested more than once a minute (the API docs consider that abusive). Room actions take a `UserRef`, either an id or a name.
+
+`BeatmapCatalog` does the same for beatmaps, plus star rating via `POST /beatmaps/{id}/attributes` cached per (beatmap, ruleset, mods). Star rating always comes from osu-web. The attributes endpoint doesn't return CS/AR/OD with mods, so `ModdedDifficulty` computes them the way lazer does for display: EZ/HR/DA first (HR caps at 10), then the rate change through approach time and the 300 window. After a rate change nothing is clamped, so DT can show AR 11 and HT a negative AR. Only the osu! ruleset gets CS/AR/OD adjustments; other rulesets only get BPM and length.
+
+## Private messages
+
+PMs use the same `ChatChannel` as room chat. The first message to someone goes through `POST /chat/new`, which also returns the channel; later ones go to that channel. The websocket delivers PMs even for channels we haven't opened, so an unknown channel there is treated as a new PM. In polling mode new PMs can't be discovered (the endpoint that would list them is lazer-only); only channels we already know are polled. The library never sends a PM on its own.
+
+## Highlights, timer, log
+
+`HighlightClassifier` is a pure function over a message: own name, "ref"/"referee" as a word in room chat, keywords, PMs. The session runs it on live messages only, never on the history loaded when a channel opens.
+
+The hub has no generic timer, so `RefereeTimer` is local and has no effect on the room. It can post milestones to room chat if enabled.
+
+`ChatTranscript` keeps a room's whole chat (the channel's replay buffer is bounded) and its results; `ExportLog` turns it into a plain-text log.
+
+## Commands
+
+`CommandTable` is the one parser for text commands, shared by the harness and a future UI. Arguments are validated when parsing, so a bad line fails before anything is sent, and unknown commands are errors rather than chat. Macros come from settings and are fully parsed before the first step runs.
+
+## Journal
+
+While a room is open its snapshot (minus the password), chat and results are saved to a JSON file, a couple of seconds after each change, and the file is removed when the room ends. If the client dies, the entries are left for the UI to offer. When a room is joined again its old chat and results are merged into the transcript, but the room state still comes from the join response and hub events.
+
 ## Things not verified yet
 
 - Whether osu-web accepts a `http://localhost` callback for third-party OAuth apps (expected, not tried).
 - Whether `JoinRoom` puts the ref in the room's chat channel. To be safe the client also joins it explicitly, which is why `chat.write_manage` is requested.
 - The `slots`/`teams` dictionaries in `MatchStarted` are assumed to be keyed by user ID.
+- Whether the attributes endpoint accepts lazer mod settings such as DT `speed_change` (not documented).
+- Whether a `chat.message.new` for a channel we haven't opened is always a PM.
 - Nothing has been run against production yet; the harness exists for that.

@@ -1,0 +1,685 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:RefereeHubApi.Desktop.ViewModels"
+             xmlns:c="using:RefereeHubApi.Desktop.Controls"
+             x:Class="RefereeHubApi.Desktop.Views.RoomView"
+             x:DataType="vm:RoomViewModel">
+    <UserControl.Styles>
+        <Style Selector="Button.tool">
+            <Setter Property="MinWidth" Value="84" />
+            <Setter Property="MinHeight" Value="52" />
+            <Setter Property="Padding" Value="12,4" />
+            <Setter Property="FontSize" Value="11" />
+        </Style>
+        <Style Selector="Button.tool StackPanel.tool">
+            <Setter Property="Spacing" Value="3" />
+        </Style>
+    </UserControl.Styles>
+
+    <UserControl.DataTemplates>
+        <DataTemplate x:DataType="vm:ModChip">
+            <Border Classes="chip" Background="{Binding Brush}" Padding="5,0">
+                <TextBlock Text="{Binding Code}" Foreground="#111" />
+            </Border>
+        </DataTemplate>
+    </UserControl.DataTemplates>
+
+    <Panel>
+        <c:TriangleField Seed="27" BiasX="0.8" />
+
+        <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
+
+            <!-- header -->
+            <DockPanel Grid.Row="0" Margin="28,14,28,0">
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8">
+                    <Border Classes="chip" Background="{StaticResource Teal}" Padding="8,2">
+                        <TextBlock Text="{Binding TypeText}" Foreground="{StaticResource TealFg}" />
+                    </Border>
+                    <Border Classes="chip" Background="{StaticResource Text2}" Padding="8,2">
+                        <TextBlock Text="{Binding QueueText}" Foreground="#111" />
+                    </Border>
+                    <Border Classes="chip" Padding="8,2">
+                        <TextBlock Text="{Binding SizeText}" Foreground="{StaticResource Text2}" />
+                    </Border>
+                    <Border Classes="chip" Background="{StaticResource Yellow}" Padding="8,2" IsVisible="{Binding Locked}">
+                        <TextBlock Text="LOCKED" Foreground="{StaticResource YellowFg}" />
+                    </Border>
+                    <Border Background="{StaticResource Card}" CornerRadius="8" Padding="8,0,0,0">
+                        <StackPanel Orientation="Horizontal" Spacing="2">
+                            <c:Icon Kind="key" Width="14" Height="14" Foreground="{StaticResource Muted}" VerticalAlignment="Center" />
+                            <TextBlock Classes="mono" Text="{Binding PasswordText}" Foreground="{StaticResource Text}" MinWidth="76" Margin="6,0"
+                                       VerticalAlignment="Center" AutomationProperties.Name="Room password" />
+                            <Button Theme="{StaticResource Icon}" Width="30" Height="30" Command="{Binding TogglePasswordCommand}"
+                                    IsEnabled="{Binding HasPassword}" AutomationProperties.Name="{Binding PasswordToggleLabel}" ToolTip.Tip="{Binding PasswordToggleLabel}">
+                                <c:Icon Kind="eye" Width="15" Height="15" />
+                            </Button>
+                            <Button Theme="{StaticResource Icon}" Width="30" Height="30" Command="{Binding CopyPasswordCommand}"
+                                    IsEnabled="{Binding HasPassword}" AutomationProperties.Name="Copy password" ToolTip.Tip="Copy password">
+                                <c:Icon Kind="copy" Width="15" Height="15" />
+                            </Button>
+                        </StackPanel>
+                    </Border>
+                    <Button Theme="{StaticResource Icon}" Width="34" Height="34" Background="{StaticResource Card}"
+                            AutomationProperties.Name="Room settings" ToolTip.Tip="Room settings">
+                        <c:Icon Kind="sliders" />
+                        <Button.Flyout>
+                            <Flyout Placement="BottomEdgeAlignedRight" Opened="settingsOpened">
+                                <StackPanel Spacing="10" Width="320">
+                                    <TextBlock Classes="section" Text="ROOM SETTINGS" />
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Classes="label" Text="NAME" />
+                                        <TextBox Text="{Binding EditName}" />
+                                    </StackPanel>
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Classes="label" Text="PASSWORD" />
+                                        <TextBox Classes="mono" Text="{Binding EditPassword}" PlaceholderText="none" />
+                                    </StackPanel>
+                                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Classes="label" Text="TYPE" />
+                                            <ComboBox SelectedIndex="{Binding EditTypeIndex}" HorizontalAlignment="Stretch">
+                                                <ComboBoxItem>Team versus</ComboBoxItem>
+                                                <ComboBoxItem>Head to head</ComboBoxItem>
+                                            </ComboBox>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" Spacing="4">
+                                            <TextBlock Classes="label" Text="QUEUE" />
+                                            <ComboBox SelectedIndex="{Binding EditQueueIndex}" HorizontalAlignment="Stretch">
+                                                <ComboBoxItem>Host only</ComboBoxItem>
+                                                <ComboBoxItem>All players</ComboBoxItem>
+                                                <ComboBoxItem>Round robin</ComboBoxItem>
+                                            </ComboBox>
+                                        </StackPanel>
+                                    </Grid>
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Classes="label" Text="{Binding EditSize, StringFormat='MAX PLAYERS: {0}'}" />
+                                        <Slider Minimum="1" Maximum="16" TickFrequency="1" IsSnapToTickEnabled="True" Value="{Binding EditSize}" />
+                                    </StackPanel>
+                                    <Button Theme="{StaticResource Skew}" Background="{StaticResource Go}" Foreground="{StaticResource GoFg}"
+                                            FontWeight="ExtraBold" HorizontalAlignment="Right" Content="Apply" Command="{Binding ApplySettingsCommand}" />
+                                </StackPanel>
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
+                    <Button Theme="{StaticResource Icon}" Width="34" Height="34" Background="{StaticResource ErrorBg}" Foreground="{StaticResource ErrorFg}"
+                            AutomationProperties.Name="Close room" ToolTip.Tip="Close room">
+                        <c:Icon Kind="close" Width="15" Height="15" StrokeWidth="2.5" />
+                        <Button.Flyout>
+                            <Flyout Placement="BottomEdgeAlignedRight">
+                                <StackPanel Spacing="10" Width="240">
+                                    <TextBlock Text="Close this room for everyone?" FontWeight="Bold" TextWrapping="Wrap" />
+                                    <Button Theme="{StaticResource Skew}" Background="{StaticResource Danger}" Foreground="{StaticResource DangerFg}"
+                                            FontWeight="ExtraBold" Content="Close room" Command="{Binding CloseRoomCommand}" />
+                                </StackPanel>
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <TextBlock Text="{Binding Name}" FontSize="22" FontWeight="Bold" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                    <TextBlock Classes="mono" Text="{Binding IdText}" VerticalAlignment="Center" />
+                    <Button Theme="{StaticResource Skew}" IsVisible="{Binding HasResult}" MinHeight="28" FontSize="12"
+                            Background="{StaticResource GoSoftBg}" Foreground="{StaticResource GoSoftFg}" Content="Last result"
+                            Command="{Binding ShowResultCommand}" VerticalAlignment="Center" />
+                </StackPanel>
+            </DockPanel>
+
+            <!-- match countdown -->
+            <Border Grid.Row="1" IsVisible="{Binding Counting}" Margin="28,12,28,0" Background="{StaticResource Go}" Padding="18,8">
+                <Border.RenderTransform>
+                    <SkewTransform AngleX="-10" />
+                </Border.RenderTransform>
+                <DockPanel>
+                    <DockPanel.RenderTransform>
+                        <SkewTransform AngleX="10" />
+                    </DockPanel.RenderTransform>
+                    <Button DockPanel.Dock="Right" Theme="{StaticResource Skew}" Background="{StaticResource GoFg}" Foreground="#d8f7b8"
+                            FontWeight="ExtraBold" Content="Stop countdown" Command="{Binding StopCountdownCommand}" />
+                    <StackPanel Orientation="Horizontal" Spacing="14">
+                        <c:Icon Kind="play" Filled="True" Width="18" Height="18" Foreground="{StaticResource GoFg}" VerticalAlignment="Center" />
+                        <TextBlock Text="MATCH STARTS IN" FontWeight="ExtraBold" LetterSpacing="0.8" Foreground="{StaticResource GoFg}" VerticalAlignment="Center" />
+                        <TextBlock Classes="display" Text="{Binding CountdownClock}" FontSize="26" FontWeight="Medium" Foreground="{StaticResource GoFg}" />
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <!-- current map and score -->
+            <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="28,18,28,8">
+                <StackPanel Grid.Column="0" Spacing="10" VerticalAlignment="Bottom">
+                    <Border Background="#E0151B18" CornerRadius="12,12,0,0" Padding="18,14" MaxWidth="640" HorizontalAlignment="Left" MinWidth="380">
+                        <Panel>
+                            <TextBlock IsVisible="{Binding !HasCurrentMap}" Classes="muted" Text="Loading current map…" />
+                            <StackPanel IsVisible="{Binding HasCurrentMap}" Spacing="4">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Classes="mono" FontSize="11" Text="{Binding CurrentMap.OrderText, FallbackValue=''}" VerticalAlignment="Center" />
+                                    <ItemsControl ItemsSource="{Binding CurrentMap.Mods, FallbackValue={x:Null}}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <StackPanel Orientation="Horizontal" Spacing="3" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                    </ItemsControl>
+                                    <Border IsVisible="{Binding CurrentGuess}" Width="16" Height="16" CornerRadius="8" Background="#33290c"
+                                            ToolTip.Tip="Guessed from the playlist until the room confirms">
+                                        <TextBlock Text="?" FontSize="11" FontWeight="ExtraBold" Foreground="#ffdb6b" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                </StackPanel>
+                                <TextBlock Text="{Binding CurrentMap.Title, FallbackValue=''}" FontSize="30" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{Binding CurrentMap.Artist, FallbackValue=''}" FontSize="16" Foreground="{StaticResource Text2}" />
+                                <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,4,0,0">
+                                    <Border Classes="chip" Background="{StaticResource Star}" Padding="8,1">
+                                        <TextBlock Text="{Binding CurrentMap.Stars, StringFormat='★ {0}', FallbackValue=''}" Foreground="{StaticResource StarFg}" FontSize="12" />
+                                    </Border>
+                                    <TextBlock Text="{Binding CurrentMap.Difficulty, FallbackValue=''}" FontSize="12" FontWeight="Bold" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding CurrentMap.MapperText, FallbackValue=''}" FontSize="12" Foreground="{StaticResource Muted}" VerticalAlignment="Center" />
+                                    <TextBlock Classes="mono" Text="{Binding CurrentMap.IdText, FallbackValue=''}" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Panel>
+                    </Border>
+                    <WrapPanel ItemSpacing="6" LineSpacing="6" MaxWidth="720" HorizontalAlignment="Left">
+                        <ItemsControl ItemsSource="{Binding CurrentMap.Stats, FallbackValue={x:Null}}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" Spacing="6" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:StatViewModel">
+                                    <Border Classes="skew" Background="#EB151B18" Padding="14,6" MinWidth="84">
+                                        <StackPanel>
+                                            <TextBlock Classes="label" Text="{Binding Label}" Foreground="{StaticResource Text}" />
+                                            <TextBlock Classes="display" FontSize="22" FontWeight="Medium">
+                                                <Run Text="{Binding Value}" Foreground="{Binding Brush}" />
+                                                <Run Text=" " />
+                                                <Run Text="{Binding Original}" FontSize="12" Foreground="{StaticResource Dim}" TextDecorations="Strikethrough" />
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Border Classes="skew" Background="#EB151B18" Padding="14,6" MinWidth="84">
+                            <StackPanel>
+                                <TextBlock Classes="label" Text="READY" Foreground="{StaticResource Text}" />
+                                <TextBlock Classes="display" FontSize="22" FontWeight="Medium">
+                                    <Run Text="{Binding ReadyCount}" />
+                                    <Run Text="{Binding PlayerCount, StringFormat='/{0}'}" FontSize="12" Foreground="{StaticResource Muted}" />
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+                        <Button Theme="{StaticResource Skew}" Background="{StaticResource Chip}" MinHeight="52" Content="Edit item">
+                            <Button.Flyout>
+                                <Flyout Opened="itemOpened">
+                                    <StackPanel Spacing="10" Width="300">
+                                        <TextBlock Classes="section" Text="CURRENT ITEM" />
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Classes="label" Text="BEATMAP ID" />
+                                            <TextBox Classes="mono" Text="{Binding EditBeatmapId}" />
+                                        </StackPanel>
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Classes="label" Text="REQUIRED MODS" />
+                                            <TextBox Classes="mono" Text="{Binding EditMods}" PlaceholderText="HD,HR or blank" />
+                                        </StackPanel>
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Classes="label" Text="ALLOWED MODS" />
+                                            <TextBox Classes="mono" Text="{Binding EditAllowedMods}" PlaceholderText="blank = none" />
+                                        </StackPanel>
+                                        <CheckBox IsChecked="{Binding EditFreestyle}" Content="Freestyle" />
+                                        <Button Theme="{StaticResource Skew}" Background="{StaticResource Go}" Foreground="{StaticResource GoFg}"
+                                                FontWeight="ExtraBold" HorizontalAlignment="Right" Content="Apply" Command="{Binding ApplyItemCommand}" />
+                                    </StackPanel>
+                                </Flyout>
+                            </Button.Flyout>
+                        </Button>
+                    </WrapPanel>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Spacing="10" HorizontalAlignment="Right" VerticalAlignment="Bottom">
+                    <Border IsVisible="{Binding TimerRunning}" HorizontalAlignment="Right" Background="{StaticResource TimerBg}"
+                            BorderBrush="{StaticResource TimerLine}" BorderThickness="2" Padding="12,3" Classes="skew">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="PICK TIMER" FontSize="10" FontWeight="ExtraBold" LetterSpacing="1" Foreground="{StaticResource TimerFg}" VerticalAlignment="Center" />
+                            <TextBlock Classes="display" Text="{Binding TimerText}" FontSize="20" FontWeight="Medium" />
+                        </StackPanel>
+                    </Border>
+                    <StackPanel IsVisible="{Binding IsTeamVersus}" Spacing="10">
+                        <StackPanel Orientation="Horizontal" Spacing="22" HorizontalAlignment="Right">
+                            <StackPanel HorizontalAlignment="Right" Spacing="2">
+                                <TextBlock Text="{Binding RedName}" FontSize="13" FontWeight="ExtraBold" LetterSpacing="1.3" Foreground="{StaticResource Red}" HorizontalAlignment="Right" />
+                                <TextBlock Classes="display" Text="{Binding ScoreRed}" FontSize="112" LineHeight="106" Foreground="{StaticResource RedPale}" HorizontalAlignment="Right" />
+                                <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right">
+                                    <Button Theme="{StaticResource Skew}" MinHeight="24" Width="30" Padding="0" Background="{StaticResource Chip}"
+                                            Foreground="{StaticResource Text2}" Content="−" Command="{Binding RedMinusCommand}" AutomationProperties.Name="Red minus one" />
+                                    <Button Theme="{StaticResource Skew}" MinHeight="24" Width="30" Padding="0" Background="{StaticResource RedBtn}"
+                                            Foreground="{StaticResource RedSoft}" Content="+" Command="{Binding RedPlusCommand}" AutomationProperties.Name="Red plus one" />
+                                </StackPanel>
+                            </StackPanel>
+                            <TextBlock Classes="display" Text="–" FontSize="64" Foreground="{StaticResource Dim}" VerticalAlignment="Center" />
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="{Binding BlueName}" FontSize="13" FontWeight="ExtraBold" LetterSpacing="1.3" Foreground="{StaticResource Blue}" />
+                                <TextBlock Classes="display" Text="{Binding ScoreBlue}" FontSize="112" LineHeight="106" Foreground="{StaticResource BluePale}" />
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <Button Theme="{StaticResource Skew}" MinHeight="24" Width="30" Padding="0" Background="{StaticResource Chip}"
+                                            Foreground="{StaticResource Text2}" Content="−" Command="{Binding BlueMinusCommand}" AutomationProperties.Name="Blue minus one" />
+                                    <Button Theme="{StaticResource Skew}" MinHeight="24" Width="30" Padding="0" Background="{StaticResource BlueBtn}"
+                                            Foreground="{StaticResource BlueSoft}" Content="+" Command="{Binding BluePlusCommand}" AutomationProperties.Name="Blue plus one" />
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right" ToolTip.Tip="{Binding PipLabel}">
+                            <Button Theme="{StaticResource Plain}" Command="{Binding CycleBestOfCommand}" ToolTip.Tip="Change best-of" Margin="0,0,6,0">
+                                <TextBlock Text="{Binding BestOfText}" FontSize="10" FontWeight="ExtraBold" LetterSpacing="0.8" Foreground="{StaticResource Dim}" />
+                            </Button>
+                            <ItemsControl ItemsSource="{Binding Pips}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" Spacing="4" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="IBrush">
+                                        <Border Classes="skew" Width="26" Height="14" Background="{Binding}" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+
+            <!-- players / playlist / chat -->
+            <Grid Grid.Row="3" ColumnDefinitions="*,1.15*,*" ColumnSpacing="14" Margin="28,14">
+
+                <DockPanel Grid.Column="0">
+                    <StackPanel DockPanel.Dock="Bottom" Spacing="8" Margin="0,10,0,0">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <TextBox Name="InviteBox" Text="{Binding InviteText}" PlaceholderText="Invite by username or #id" Background="{StaticResource Card}"
+                                     KeyDown="inviteKeyDown" AutomationProperties.Name="Invite player" />
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                <c:Icon Kind="shield" Width="14" Height="14" Foreground="{StaticResource Muted}" VerticalAlignment="Center" />
+                                <ItemsControl ItemsSource="{Binding Referees}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal" Spacing="4" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:RefChipViewModel">
+                                            <Panel ToolTip.Tip="{Binding Title}" Opacity="{Binding Opacity}">
+                                                <Border Width="26" Height="26" CornerRadius="6" Background="{Binding Background}" BorderBrush="{Binding Ring}" BorderThickness="2">
+                                                    <TextBlock Text="{Binding Initials}" FontSize="10" FontWeight="ExtraBold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                </Border>
+                                                <Ellipse Width="10" Height="10" Fill="{Binding Dot}" Stroke="{StaticResource Bg}" StrokeThickness="2"
+                                                         HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-3,-3" />
+                                            </Panel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Grid>
+                        <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding HasBans}" ToolTip.Tip="Only bans made while this client was connected">
+                            <c:Icon Kind="ban" Width="13" Height="13" Foreground="{StaticResource ErrorFg}" StrokeWidth="2.2" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding BannedText}" FontSize="12" Foreground="{StaticResource Muted}" />
+                        </StackPanel>
+                    </StackPanel>
+                    <ScrollViewer>
+                        <ItemsControl ItemsSource="{Binding Teams}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Spacing="10" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:TeamGroupViewModel">
+                                    <Border Classes="card">
+                                        <StackPanel>
+                                            <Border BorderBrush="{Binding Color}" BorderThickness="0,0,0,2" Padding="14,7">
+                                                <DockPanel>
+                                                    <ItemsControl DockPanel.Dock="Right" ItemsSource="{Binding ReadyDots}" ToolTip.Tip="{Binding ReadyLabel}">
+                                                        <ItemsControl.ItemsPanel>
+                                                            <ItemsPanelTemplate>
+                                                                <StackPanel Orientation="Horizontal" Spacing="3" />
+                                                            </ItemsPanelTemplate>
+                                                        </ItemsControl.ItemsPanel>
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate x:DataType="IBrush">
+                                                                <Border Classes="skew" Width="6" Height="14" Background="{Binding}" />
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                    <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="ExtraBold" LetterSpacing="1" Foreground="{Binding Color}" />
+                                                </DockPanel>
+                                            </Border>
+                                            <TextBlock IsVisible="{Binding IsEmpty}" Classes="muted" FontSize="12" Margin="14,8" Text="Nobody yet" />
+                                            <ItemsControl ItemsSource="{Binding Players}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="vm:PlayerRowViewModel">
+                                                        <Border BorderBrush="{StaticResource RowLine}" BorderThickness="0,1,0,0" Padding="14,5,10,5">
+                                                            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="10">
+                                                                <Border Width="26" Height="26" CornerRadius="6" Background="{StaticResource Chip}">
+                                                                    <TextBlock Text="{Binding Initials}" FontSize="10" FontWeight="ExtraBold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                                </Border>
+                                                                <TextBlock Grid.Column="1" VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
+                                                                    <Run Text="{Binding Name}" FontWeight="SemiBold" />
+                                                                    <Run Text="{Binding Country}" FontSize="10" FontWeight="Bold" Foreground="{StaticResource Dim}" />
+                                                                </TextBlock>
+                                                                <ItemsControl Grid.Column="2" ItemsSource="{Binding Mods}" VerticalAlignment="Center">
+                                                                    <ItemsControl.ItemsPanel>
+                                                                        <ItemsPanelTemplate>
+                                                                            <StackPanel Orientation="Horizontal" Spacing="3" />
+                                                                        </ItemsPanelTemplate>
+                                                                    </ItemsControl.ItemsPanel>
+                                                                </ItemsControl>
+                                                                <Border Grid.Column="3" Classes="skew" Width="84" Padding="0,3" Background="{Binding StatusBrush}" VerticalAlignment="Center">
+                                                                    <TextBlock Text="{Binding Status}" FontSize="10" FontWeight="ExtraBold" LetterSpacing="0.6"
+                                                                               Foreground="{Binding StatusForeground}" HorizontalAlignment="Center" />
+                                                                </Border>
+                                                                <Button Grid.Column="4" Theme="{StaticResource Icon}" Width="30" Height="30" Foreground="{StaticResource Muted}"
+                                                                        AutomationProperties.Name="{Binding ActionsLabel}">
+                                                                    <c:Icon Kind="more" />
+                                                                    <Button.Flyout>
+                                                                        <MenuFlyout>
+                                                                            <MenuItem Header="Move to red" Command="{Binding MoveRedCommand}" IsVisible="{Binding CanMove}" />
+                                                                            <MenuItem Header="Move to blue" Command="{Binding MoveBlueCommand}" IsVisible="{Binding CanMove}" />
+                                                                            <MenuItem Header="Message" Command="{Binding MessageCommand}" />
+                                                                            <MenuItem Header="Make referee" Command="{Binding MakeRefereeCommand}" />
+                                                                            <Separator />
+                                                                            <MenuItem Header="Kick" Command="{Binding KickCommand}" />
+                                                                            <MenuItem Header="Ban…">
+                                                                                <MenuItem Header="{Binding Name, StringFormat='Ban {0} from this room'}" Command="{Binding BanCommand}" />
+                                                                            </MenuItem>
+                                                                        </MenuFlyout>
+                                                                    </Button.Flyout>
+                                                                </Button>
+                                                            </Grid>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
+
+                <Border Grid.Column="1" Classes="card" Padding="14,12" VerticalAlignment="Top">
+                    <DockPanel>
+                        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+                            <Button DockPanel.Dock="Right" Theme="{StaticResource Skew}" MinHeight="30" Padding="12,0" FontSize="12">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <c:Icon Kind="plus" Width="12" Height="12" StrokeWidth="3" VerticalAlignment="Center" />
+                                    <TextBlock Text="Add item" />
+                                </StackPanel>
+                                <Button.Flyout>
+                                    <Flyout>
+                                        <StackPanel Spacing="10" Width="260">
+                                            <TextBlock Classes="section" Text="ADD ITEM" />
+                                            <StackPanel Spacing="4">
+                                                <TextBlock Classes="label" Text="BEATMAP ID" />
+                                                <TextBox Classes="mono" Text="{Binding AddBeatmapId}" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4">
+                                                <TextBlock Classes="label" Text="REQUIRED MODS" />
+                                                <TextBox Classes="mono" Text="{Binding AddMods}" PlaceholderText="HD,HR or blank" />
+                                            </StackPanel>
+                                            <Button Theme="{StaticResource Skew}" Background="{StaticResource Go}" Foreground="{StaticResource GoFg}"
+                                                    FontWeight="ExtraBold" HorizontalAlignment="Right" Content="Add" Command="{Binding AddItemCommand}" />
+                                        </StackPanel>
+                                    </Flyout>
+                                </Button.Flyout>
+                            </Button>
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <TextBlock Classes="section" Text="PLAYLIST" VerticalAlignment="Center" />
+                                <Border Classes="chip">
+                                    <TextBlock Text="{Binding PlayedCount, StringFormat='{}{0} PLAYED'}" Foreground="{StaticResource Text2}" />
+                                </Border>
+                            </StackPanel>
+                        </DockPanel>
+                        <ScrollViewer>
+                            <ItemsControl ItemsSource="{Binding Playlist}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <UniformGrid Columns="2" ColumnSpacing="6" RowSpacing="6" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:PlaylistTileViewModel">
+                                        <Border Classes="skew" Background="{Binding Background}" BorderBrush="{Binding Border}" BorderThickness="2"
+                                                MinHeight="44" Padding="12,4" Opacity="{Binding Opacity}" ToolTip.Tip="{Binding Tooltip}">
+                                            <Border.ContextFlyout>
+                                                <MenuFlyout>
+                                                    <MenuItem Header="Remove item" Command="{Binding RemoveCommand}" IsEnabled="{Binding CanRemove}" />
+                                                </MenuFlyout>
+                                            </Border.ContextFlyout>
+                                            <Grid ColumnDefinitions="18,*,Auto" ColumnSpacing="8">
+                                                <TextBlock Classes="mono" FontSize="11" Text="{Binding Order}" Foreground="{StaticResource Dim}" VerticalAlignment="Center" />
+                                                <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                                        <ItemsControl ItemsSource="{Binding Mods}">
+                                                            <ItemsControl.ItemsPanel>
+                                                                <ItemsPanelTemplate>
+                                                                    <StackPanel Orientation="Horizontal" Spacing="3" />
+                                                                </ItemsPanelTemplate>
+                                                            </ItemsControl.ItemsPanel>
+                                                        </ItemsControl>
+                                                        <TextBlock Text="{Binding StarsText}" FontSize="10" Foreground="{StaticResource Muted}" VerticalAlignment="Center" />
+                                                    </StackPanel>
+                                                </StackPanel>
+                                                <TextBlock Grid.Column="2" Text="{Binding Tag}" FontSize="9" FontWeight="ExtraBold" LetterSpacing="0.6"
+                                                           Foreground="{Binding TagBrush}" VerticalAlignment="Center" />
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </DockPanel>
+                </Border>
+
+                <Border Grid.Column="2" Classes="card">
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top" BorderBrush="{StaticResource BarLine}" BorderThickness="0,0,0,1" Padding="10,0,6,0">
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Theme="{StaticResource Icon}" Width="34" Height="34" Foreground="{StaticResource Muted}"
+                                        AutomationProperties.Name="Save chat log" ToolTip.Tip="Save chat log" Command="{Binding SaveLogCommand}">
+                                    <c:Icon Kind="download" />
+                                </Button>
+                                <StackPanel Orientation="Horizontal" Spacing="2">
+                                    <Button Theme="{StaticResource Plain}" MinHeight="40" Padding="12,0" BorderThickness="0,0,0,2"
+                                            BorderBrush="{Binding ChatTabLine}" Command="{Binding SelectChatCommand}">
+                                        <TextBlock Text="{Binding ChannelName}" FontWeight="Bold" Foreground="{Binding ChatTabFg}" VerticalAlignment="Center" />
+                                    </Button>
+                                    <Button Theme="{StaticResource Plain}" MinHeight="40" Padding="12,0" BorderThickness="0,0,0,2"
+                                            BorderBrush="{Binding ActivityTabLine}" Command="{Binding SelectActivityCommand}">
+                                        <TextBlock Text="Activity" FontWeight="Bold" Foreground="{Binding ActivityTabFg}" VerticalAlignment="Center" />
+                                    </Button>
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+
+                        <StackPanel DockPanel.Dock="Bottom" Spacing="6" Margin="10,8" IsVisible="{Binding ShowChat}">
+                            <Border IsVisible="{Binding ShowHints}" Background="{StaticResource Bg}" CornerRadius="8" ClipToBounds="True">
+                                <ItemsControl ItemsSource="{Binding CommandHints}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:CommandHintViewModel">
+                                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" Background="{Binding Background}" Margin="0">
+                                                <TextBlock Classes="mono" Text="{Binding Usage}" Foreground="{StaticResource Text}" Margin="10,5,0,5" MinWidth="130" />
+                                                <TextBlock Grid.Column="1" Text="{Binding Summary}" FontSize="12" Foreground="{StaticResource Muted}"
+                                                           TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Border>
+                            <TextBox Name="ChatBox" Text="{Binding ChatInput}" PlaceholderText="Message, or / for commands" FontFamily="{Binding ChatFont}"
+                                     MinHeight="36" KeyDown="chatKeyDown" AutomationProperties.Name="Message or command" />
+                        </StackPanel>
+
+                        <Panel>
+                            <ScrollViewer Name="ChatScroll" IsVisible="{Binding ShowChat}" Padding="8">
+                                <ItemsControl ItemsSource="{Binding Chat}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:ChatLineViewModel">
+                                            <Border Background="{Binding Background}" CornerRadius="6" Padding="4,3" Margin="0,1">
+                                                <Grid ColumnDefinitions="Auto,78,*,Auto" ColumnSpacing="8">
+                                                    <TextBlock Text="{Binding Time}" FontSize="11" Foreground="{StaticResource Dim}" Margin="0,2,0,0" />
+                                                    <TextBlock Grid.Column="1" Text="{Binding Who}" FontWeight="Bold" FontSize="13" Foreground="{Binding WhoBrush}"
+                                                               TextAlignment="Right" TextTrimming="CharacterEllipsis" />
+                                                    <SelectableTextBlock Grid.Column="2" Text="{Binding Text}" FontSize="13" TextWrapping="Wrap"
+                                                                         FontStyle="{Binding Style}" Foreground="{StaticResource Body}" />
+                                                    <Border Grid.Column="3" Classes="chip" Padding="6,0" IsVisible="{Binding HasTag}" Background="{Binding TagBrush}" VerticalAlignment="Top">
+                                                        <TextBlock Text="{Binding Tag}" FontSize="9" Foreground="#111" />
+                                                    </Border>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                            <ScrollViewer Name="ActivityScroll" IsVisible="{Binding ShowActivity}" Padding="12,10">
+                                <ItemsControl ItemsSource="{Binding Activity}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:ActivityViewModel">
+                                            <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,4">
+                                                <TextBlock Text="{Binding Time}" FontSize="11" Foreground="{StaticResource Dim}" Width="34" VerticalAlignment="Center" />
+                                                <Border Classes="skew" Width="6" Height="18" Background="{Binding Color}" />
+                                                <TextBlock FontSize="13" VerticalAlignment="Center" Foreground="{StaticResource Body}" TextWrapping="Wrap">
+                                                    <Run Text="{Binding Who}" FontWeight="Bold" Foreground="{Binding WhoBrush}" />
+                                                    <Run Text="{Binding Text}" />
+                                                </TextBlock>
+                                                <Border Classes="chip" Padding="6,0" IsVisible="{Binding HasChip}" Background="{Binding ChipBrush}">
+                                                    <TextBlock Text="{Binding Chip}" Foreground="#111" />
+                                                </Border>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </Panel>
+                    </DockPanel>
+                </Border>
+            </Grid>
+
+            <!-- footer -->
+            <DockPanel Grid.Row="4" Margin="28,10,28,18">
+                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" Spacing="6">
+                    <Button Theme="{StaticResource Skew}" MinHeight="52" Padding="28,0" Background="{StaticResource Accent}" Foreground="{StaticResource AccentFg}"
+                            FontWeight="ExtraBold" FontSize="15" Margin="0,0,12,0" Command="{Binding BackCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <c:Icon Kind="back" Width="18" Height="18" StrokeWidth="2.5" VerticalAlignment="Center" />
+                            <TextBlock Text="Back" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <Button Theme="{StaticResource Skew}" Classes="tool" Click="inviteClick">
+                        <StackPanel Classes="tool" HorizontalAlignment="Center">
+                            <c:Icon Kind="userplus" HorizontalAlignment="Center" />
+                            <TextBlock Text="Invite" HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <Button Theme="{StaticResource Skew}" Classes="tool">
+                        <StackPanel Classes="tool" HorizontalAlignment="Center">
+                            <c:Icon Kind="shield" HorizontalAlignment="Center" />
+                            <TextBlock Text="Referees" HorizontalAlignment="Center" />
+                        </StackPanel>
+                        <Button.Flyout>
+                            <Flyout Placement="TopEdgeAlignedLeft">
+                                <StackPanel Spacing="10" Width="280">
+                                    <TextBlock Classes="section" Text="REFEREES" />
+                                    <ItemsControl ItemsSource="{Binding Referees}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:RefChipViewModel">
+                                                <DockPanel Margin="0,3">
+                                                    <Button DockPanel.Dock="Right" Theme="{StaticResource Icon}" Width="28" Height="28" IsVisible="{Binding CanRemove}"
+                                                            Command="{Binding RemoveCommand}" AutomationProperties.Name="{Binding Name, StringFormat='Remove {0}'}">
+                                                        <c:Icon Kind="close" Width="12" Height="12" />
+                                                    </Button>
+                                                    <TextBlock Text="{Binding Title}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                                </DockPanel>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                        <TextBox Text="{Binding RefereeText}" PlaceholderText="username or #id" />
+                                        <Button Grid.Column="1" Theme="{StaticResource Skew}" Content="Add" Command="{Binding AddRefereeCommand}" MinHeight="38" />
+                                    </Grid>
+                                </StackPanel>
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
+                    <Button Theme="{StaticResource Skew}" Classes="tool" Command="{Binding RollCommand}">
+                        <StackPanel Classes="tool" HorizontalAlignment="Center">
+                            <c:Icon Kind="dice" HorizontalAlignment="Center" />
+                            <TextBlock Text="Roll" HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <Button Theme="{StaticResource Skew}" Classes="tool" Background="{Binding LockBg}" Command="{Binding ToggleLockCommand}">
+                        <StackPanel Classes="tool" HorizontalAlignment="Center">
+                            <c:Icon Kind="{Binding LockIcon}" HorizontalAlignment="Center" />
+                            <TextBlock Text="{Binding LockText}" HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <Button Theme="{StaticResource Skew}" Classes="tool" Background="{Binding TimerBg}" Foreground="{Binding TimerFg}">
+                        <StackPanel Classes="tool" HorizontalAlignment="Center">
+                            <c:Icon Kind="timer" HorizontalAlignment="Center" />
+                            <TextBlock Text="Pick timer" HorizontalAlignment="Center" />
+                        </StackPanel>
+                        <Button.Flyout>
+                            <MenuFlyout Placement="TopEdgeAlignedLeft" ItemsSource="{Binding TimerPresets}">
+                                <MenuFlyout.ItemContainerTheme>
+                                    <ControlTheme TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}" x:DataType="x:String">
+                                        <Setter Property="Header" Value="{Binding}" />
+                                        <Setter Property="Command" Value="{Binding $parent[UserControl].((vm:RoomViewModel)DataContext).StartTimerCommand}" />
+                                        <Setter Property="CommandParameter" Value="{Binding}" />
+                                    </ControlTheme>
+                                </MenuFlyout.ItemContainerTheme>
+                            </MenuFlyout>
+                        </Button.Flyout>
+                    </Button>
+                    <Button Theme="{StaticResource Skew}" Classes="tool" IsVisible="{Binding TimerRunning}" Background="{StaticResource Chip}"
+                            Command="{Binding StopTimerCommand}" Content="Stop timer" />
+                </StackPanel>
+
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6">
+                    <Button Theme="{StaticResource Skew}" MinHeight="52" Padding="20,0" Background="{StaticResource ErrorBg}" Foreground="{StaticResource ErrorFg}"
+                            FontWeight="ExtraBold" Content="Abort" Command="{Binding AbortCommand}" IsEnabled="{Binding CanAbort}"
+                            ToolTip.Tip="Abort works only while a map is loading or playing" ToolTip.ShowOnDisabled="True" />
+                    <Border Classes="skew" Background="#F2151B18" MinHeight="52">
+                        <ItemsControl ItemsSource="{Binding Countdowns}" RenderTransform="{x:Null}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:CountdownOption">
+                                    <Button Theme="{StaticResource Plain}" MinWidth="48" MinHeight="52" Background="{Binding Background}"
+                                            Command="{Binding PickCommand}" HorizontalContentAlignment="Center"
+                                            AutomationProperties.Name="{Binding Label, StringFormat='Countdown {0}'}">
+                                        <TextBlock Text="{Binding Label}" FontWeight="ExtraBold" Foreground="{Binding Foreground}"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <TextBlock.RenderTransform>
+                                                <SkewTransform AngleX="12" />
+                                            </TextBlock.RenderTransform>
+                                        </TextBlock>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Border>
+                    <Button Theme="{StaticResource Skew}" MinHeight="52" MinWidth="240" Padding="28,0" Background="{Binding StartBg}" Foreground="{Binding StartFg}"
+                            FontWeight="ExtraBold" FontSize="16" Command="{Binding StartCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <c:Icon Kind="{Binding StartIcon}" Filled="True" Width="18" Height="18" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding StartLabel}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+                <Panel />
+            </DockPanel>
+        </Grid>
+    </Panel>
+</UserControl>

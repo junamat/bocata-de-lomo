@@ -1,0 +1,112 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Outfit / Quicksand / JetBrains Mono are used when installed; Inter ships with the app. -->
+    <FontFamily x:Key="UiFont">Outfit, fonts:Inter#Inter, sans-serif</FontFamily>
+    <FontFamily x:Key="DisplayFont">Quicksand, fonts:Inter#Inter, sans-serif</FontFamily>
+    <FontFamily x:Key="MonoFont">JetBrains Mono, DejaVu Sans Mono, Consolas, monospace</FontFamily>
+
+    <Color x:Key="BgColor">#0d1210</Color>
+    <SolidColorBrush x:Key="Bg" Color="#0d1210" />
+    <SolidColorBrush x:Key="Bar" Color="#151b18" />
+    <SolidColorBrush x:Key="BarLine" Color="#222b27" />
+    <SolidColorBrush x:Key="Card" Color="#E6151B18" />
+    <SolidColorBrush x:Key="CardSolid" Color="#151b18" />
+    <SolidColorBrush x:Key="RowLine" Color="#1f2824" />
+    <SolidColorBrush x:Key="Track" Color="#1a221e" />
+    <SolidColorBrush x:Key="TabActive" Color="#1c2420" />
+
+    <SolidColorBrush x:Key="Text" Color="#eef3f0" />
+    <SolidColorBrush x:Key="Text2" Color="#c6d3cd" />
+    <SolidColorBrush x:Key="Body" Color="#dde6e2" />
+    <SolidColorBrush x:Key="Muted" Color="#9fb0a8" />
+    <SolidColorBrush x:Key="Dim" Color="#6b7b74" />
+
+    <SolidColorBrush x:Key="Chip" Color="#2a3530" />
+    <SolidColorBrush x:Key="Purple" Color="#3a3150" />
+    <SolidColorBrush x:Key="PurpleOn" Color="#6f4fd8" />
+
+    <SolidColorBrush x:Key="Accent" Color="#ff66ab" />
+    <SolidColorBrush x:Key="AccentFg" Color="#2a0618" />
+    <SolidColorBrush x:Key="AccentRow" Color="#2a1a24" />
+    <SolidColorBrush x:Key="Go" Color="#9be34a" />
+    <SolidColorBrush x:Key="GoFg" Color="#10200a" />
+    <SolidColorBrush x:Key="GoSoftBg" Color="#1f3012" />
+    <SolidColorBrush x:Key="GoSoftFg" Color="#b8f07a" />
+    <SolidColorBrush x:Key="Yellow" Color="#ffcc33" />
+    <SolidColorBrush x:Key="YellowFg" Color="#2a1d00" />
+    <SolidColorBrush x:Key="Teal" Color="#7fe3d4" />
+    <SolidColorBrush x:Key="TealFg" Color="#07201c" />
+    <SolidColorBrush x:Key="TimerBg" Color="#12302c" />
+    <SolidColorBrush x:Key="TimerLine" Color="#5fe0d0" />
+    <SolidColorBrush x:Key="TimerFg" Color="#8ff0e4" />
+    <SolidColorBrush x:Key="Star" Color="#ff9a4a" />
+    <SolidColorBrush x:Key="StarFg" Color="#2a1200" />
+    <SolidColorBrush x:Key="Info" Color="#1d3346" />
+    <SolidColorBrush x:Key="InfoFg" Color="#a9d6ff" />
+
+    <SolidColorBrush x:Key="Red" Color="#ff5a6a" />
+    <SolidColorBrush x:Key="RedSoft" Color="#ff8a93" />
+    <SolidColorBrush x:Key="RedPale" Color="#ffd6da" />
+    <SolidColorBrush x:Key="RedBtn" Color="#3a1a1f" />
+    <SolidColorBrush x:Key="Blue" Color="#4fb1ff" />
+    <SolidColorBrush x:Key="BlueSoft" Color="#8ccaff" />
+    <SolidColorBrush x:Key="BluePale" Color="#d3ebff" />
+    <SolidColorBrush x:Key="BlueBtn" Color="#142a3d" />
+    <SolidColorBrush x:Key="BlueFg" Color="#06192a" />
+
+    <SolidColorBrush x:Key="Danger" Color="#ff4d5e" />
+    <SolidColorBrush x:Key="DangerFg" Color="#2a0006" />
+    <SolidColorBrush x:Key="ErrorBg" Color="#3a1418" />
+    <SolidColorBrush x:Key="ErrorFg" Color="#ff8a93" />
+    <SolidColorBrush x:Key="ErrorPale" Color="#ffd6da" />
+    <SolidColorBrush x:Key="DisabledFg" Color="#a8636a" />
+
+    <!-- Fluent text box: flat dark field, no border. -->
+    <SolidColorBrush x:Key="TextControlBackground" Color="#0d1210" />
+    <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#111816" />
+    <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#0d1210" />
+    <SolidColorBrush x:Key="TextControlBorderBrush" Color="Transparent" />
+    <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#2a3530" />
+    <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#ff66ab" />
+    <SolidColorBrush x:Key="TextControlForeground" Color="#eef3f0" />
+    <SolidColorBrush x:Key="TextControlForegroundPointerOver" Color="#eef3f0" />
+    <SolidColorBrush x:Key="TextControlForegroundFocused" Color="#eef3f0" />
+    <SolidColorBrush x:Key="TextControlPlaceholderForeground" Color="#6b7b74" />
+    <SolidColorBrush x:Key="TextControlPlaceholderForegroundPointerOver" Color="#6b7b74" />
+    <SolidColorBrush x:Key="TextControlPlaceholderForegroundFocused" Color="#6b7b74" />
+    <SolidColorBrush x:Key="TextControlSelectionHighlightColor" Color="#80ff66ab" />
+    <Thickness x:Key="TextControlBorderThemeThickness">1</Thickness>
+    <Thickness x:Key="TextControlBorderThemeThicknessFocused">1</Thickness>
+    <CornerRadius x:Key="ControlCornerRadius">8</CornerRadius>
+    <CornerRadius x:Key="OverlayCornerRadius">10</CornerRadius>
+
+    <SolidColorBrush x:Key="ComboBoxBackground" Color="#0d1210" />
+    <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="#111816" />
+    <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="Transparent" />
+    <SolidColorBrush x:Key="ComboBoxBorderBrushPointerOver" Color="#2a3530" />
+    <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="#151b18" />
+
+    <SolidColorBrush x:Key="FlyoutPresenterBackground" Color="#151b18" />
+    <SolidColorBrush x:Key="FlyoutBorderThemeBrush" Color="#2a3530" />
+    <SolidColorBrush x:Key="MenuFlyoutPresenterBackground" Color="#151b18" />
+    <SolidColorBrush x:Key="MenuFlyoutPresenterBorderBrush" Color="#2a3530" />
+
+    <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="#9be34a" />
+    <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="#b0ec6d" />
+    <SolidColorBrush x:Key="ToggleSwitchKnobFillOn" Color="#10200a" />
+    <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPointerOver" Color="#10200a" />
+    <SolidColorBrush x:Key="ToggleSwitchFillOff" Color="#2a3530" />
+    <SolidColorBrush x:Key="ToggleSwitchFillOffPointerOver" Color="#33403a" />
+    <SolidColorBrush x:Key="ToggleSwitchStrokeOff" Color="Transparent" />
+    <SolidColorBrush x:Key="ToggleSwitchStrokeOffPointerOver" Color="Transparent" />
+    <SolidColorBrush x:Key="ToggleSwitchKnobFillOff" Color="#9fb0a8" />
+    <SolidColorBrush x:Key="ToggleSwitchKnobFillOffPointerOver" Color="#c6d3cd" />
+
+    <SolidColorBrush x:Key="SliderTrackValueFill" Color="#ff66ab" />
+    <SolidColorBrush x:Key="SliderTrackValueFillPointerOver" Color="#ff80b9" />
+    <SolidColorBrush x:Key="SliderThumbBackground" Color="#ff66ab" />
+    <SolidColorBrush x:Key="SliderTrackFill" Color="#2a3530" />
+
+    <SolidColorBrush x:Key="ScrollBarThumbFill" Color="#2a3530" />
+</ResourceDictionary>

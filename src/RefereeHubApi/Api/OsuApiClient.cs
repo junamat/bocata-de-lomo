@@ -24,6 +24,8 @@ namespace RefereeHubApi.Api
     {
         public const int DEFAULT_REQUESTS_PER_MINUTE = 60;
 
+        public const int MAX_IDS_PER_REQUEST = 50;
+
         public static readonly Uri DEFAULT_BASE_URL = new Uri("https://osu.ppy.sh/api/v2/");
 
         private readonly HttpClient http;
@@ -53,6 +55,72 @@ namespace RefereeHubApi.Api
         public Task<ApiUser> GetMeAsync(CancellationToken ct = default)
             => send<ApiUser>(HttpMethod.Get, "me", null, ct);
 
+        // null when no such user (404).
+        public async Task<ApiUser?> GetUserByNameAsync(string username, CancellationToken ct = default)
+        {
+            try
+            {
+                return await send<ApiUser>(HttpMethod.Get, $"users/@{Uri.EscapeDataString(username)}?key=username", null, ct).ConfigureAwait(false);
+            }
+            catch (OsuApiException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
+                return null;
+            }
+        }
+
+        // at most 50 ids per request (API limit); unknown ids are just missing from the result.
+        public async Task<IReadOnlyList<ApiUser>> GetUsersAsync(IReadOnlyCollection<int> ids, CancellationToken ct = default)
+        {
+            if (ids.Count == 0)
+                return [];
+
+            if (ids.Count > MAX_IDS_PER_REQUEST)
+                throw new ArgumentException($"At most {MAX_IDS_PER_REQUEST} ids per request.", nameof(ids));
+
+            string query = string.Join("&", ids.Select(id => $"ids[]={id}"));
+            var response = await send<UsersResponse>(HttpMethod.Get, $"users?{query}", null, ct).ConfigureAwait(false);
+            return response.Users;
+        }
+
+        // null when no such beatmap (404).
+        public async Task<ApiBeatmap?> GetBeatmapAsync(int beatmapId, CancellationToken ct = default)
+        {
+            try
+            {
+                return await send<ApiBeatmap>(HttpMethod.Get, $"beatmaps/{beatmapId}", null, ct).ConfigureAwait(false);
+            }
+            catch (OsuApiException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
+                return null;
+            }
+        }
+
+        public async Task<IReadOnlyList<ApiBeatmap>> GetBeatmapsAsync(IReadOnlyCollection<int> ids, CancellationToken ct = default)
+        {
+            if (ids.Count == 0)
+                return [];
+
+            if (ids.Count > MAX_IDS_PER_REQUEST)
+                throw new ArgumentException($"At most {MAX_IDS_PER_REQUEST} ids per request.", nameof(ids));
+
+            string query = string.Join("&", ids.Select(id => $"ids[]={id}"));
+            var response = await send<BeatmapsResponse>(HttpMethod.Get, $"beatmaps?{query}", null, ct).ConfigureAwait(false);
+            return response.Beatmaps;
+        }
+
+        // star rating and max combo with mods, computed by osu-web. mods go as full objects so settings (DT speed_change, DA) are kept.
+        public async Task<ApiDifficultyAttributes> GetBeatmapAttributesAsync(int beatmapId, int rulesetId, IEnumerable<Hub.Models.Mod> mods, CancellationToken ct = default)
+        {
+            var body = new
+            {
+                ruleset_id = rulesetId,
+                mods = mods.Select(m => new { acronym = m.Acronym, settings = m.Settings ?? new Dictionary<string, object>() }).ToArray(),
+            };
+
+            var response = await send<BeatmapAttributesResponse>(HttpMethod.Post, $"beatmaps/{beatmapId}/attributes", () => JsonContent.Create(body), ct).ConfigureAwait(false);
+            return response.Attributes;
+        }
+
         public async Task<ChatMessage[]> GetChannelMessagesAsync(long channelId, long? since = null, int limit = 50, CancellationToken ct = default)
         {
             string path = $"chat/channels/{channelId}/messages?limit={Math.Clamp(limit, 1, 50)}";
@@ -65,6 +133,10 @@ namespace RefereeHubApi.Api
 
         public Task<ChatMessage> SendChannelMessageAsync(long channelId, string message, bool isAction = false, CancellationToken ct = default)
             => send<ChatMessage>(HttpMethod.Post, $"chat/channels/{channelId}/messages", () => JsonContent.Create(new { message, is_action = isAction }), ct);
+
+        // opens (or reuses) the PM channel with a user and sends the first message. Fails for users who block us or only accept friends.
+        public Task<NewPrivateChatResponse> CreatePrivateChatAsync(int targetUserId, string message, bool isAction = false, string? uuid = null, CancellationToken ct = default)
+            => send<NewPrivateChatResponse>(HttpMethod.Post, "chat/new", () => JsonContent.Create(new { target_id = targetUserId, message, is_action = isAction, uuid }), ct);
 
         public Task JoinChannelAsync(long channelId, int userId, CancellationToken ct = default)
             => send<object>(HttpMethod.Put, $"chat/channels/{channelId}/users/{userId}", null, ct, readBody: false);

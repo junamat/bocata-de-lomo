@@ -1,13 +1,17 @@
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using RefereeHubApi.Api;
+using RefereeHubApi.Beatmaps;
 using RefereeHubApi.Chat;
 using RefereeHubApi.Hub;
 using RefereeHubApi.Hub.Models;
 using RefereeHubApi.Hub.Models.Events;
 using RefereeHubApi.Hub.Models.Requests;
 using RefereeHubApi.Hub.Models.Responses;
+using RefereeHubApi.Logs;
+using RefereeHubApi.Timers;
 using RefereeHubApi.State;
+using RefereeHubApi.Users;
 
 namespace RefereeHubApi.Session
 {
@@ -40,15 +44,28 @@ namespace RefereeHubApi.Session
 
         public ChatChannel? Chat { get; internal set; }
 
+        // full chat history and map results for this room, for log export and the journal.
+        public ChatTranscript Transcript { get; }
+
+        // local only; never touches the hub.
+        public RefereeTimer Timer { get; }
+
+        private IDisposable? timerAnnouncer;
+
+        internal Journal.RoomJournalRecorder? JournalRecorder { get; set; }
+
         public Exception? ChatError { get; internal set; }
 
         public bool HasEnded => State.Ended != null;
 
-        internal RefereeRoom(RefereeSession session, RoomSnapshot initial)
+        internal RefereeRoom(RefereeSession session, RoomSnapshot initial, TimeProvider time)
         {
+            var createdAt = time.GetUtcNow();
+            Timer = new RefereeTimer(time);
             this.session = session;
             RoomId = initial.RoomId;
             state = new BehaviorSubject<RoomSnapshot>(initial);
+            Transcript = new ChatTranscript(initial.ChatChannelId, $"#mp_{initial.RoomId} {initial.Name}", createdAt);
         }
 
         internal (RoomSnapshot before, RoomSnapshot after) Apply(IRoomEvent e, int selfUserId, DateTimeOffset now)
@@ -61,7 +78,10 @@ namespace RefereeHubApi.Session
                 after = RoomStateReducer.Apply(before, e, selfUserId, now);
 
                 if (!ReferenceEquals(before, after))
+                {
                     state.OnNext(after);
+                    Transcript.Title = $"#mp_{RoomId} {after.Name}";
+                }
             }
 
             events.OnNext(e);
@@ -83,29 +103,46 @@ namespace RefereeHubApi.Session
             }
         }
 
-        internal void PublishResult(MatchResult result) => results.OnNext(result);
+        internal void PublishResult(MatchResult result, DateTimeOffset at)
+        {
+            int? beatmapId = State.Playlist.FirstOrDefault(p => p.PlaylistItemId == result.PlaylistItemId)?.BeatmapId;
+            Transcript.AddResult(new TranscriptResult(at, beatmapId, result));
+            results.OnNext(result);
+        }
 
         internal void Complete()
         {
             state.OnCompleted();
             events.OnCompleted();
             results.OnCompleted();
+            Transcript.Complete();
+            timerAnnouncer?.Dispose();
+            Timer.Dispose();
         }
 
         private RefereeHubConnection hub => session.Hub;
 
         #region Players
 
-        public Task InviteAsync(int userId, CancellationToken ct = default) => hub.InvitePlayer(RoomId, userId, ct);
+        // users can be given by id or name; names are resolved through the session's user cache.
+        private Task<int> resolve(UserRef user, CancellationToken ct) => session.Users.ResolveIdAsync(user, ct);
 
-        public Task KickAsync(int userId, CancellationToken ct = default) => hub.KickPlayer(RoomId, userId, ct);
+        public async Task InviteAsync(UserRef user, CancellationToken ct = default)
+            => await hub.InvitePlayer(RoomId, await resolve(user, ct).ConfigureAwait(false), ct).ConfigureAwait(false);
 
-        public Task BanAsync(int userId, CancellationToken ct = default) => hub.BanUser(RoomId, userId, ct);
+        public async Task KickAsync(UserRef user, CancellationToken ct = default)
+            => await hub.KickPlayer(RoomId, await resolve(user, ct).ConfigureAwait(false), ct).ConfigureAwait(false);
 
-        public Task MoveAsync(int userId, byte? slot = null, MatchTeam? team = null, CancellationToken ct = default)
-            => hub.MoveUser(RoomId, new MoveUserRequest { UserId = userId, Slot = slot, Team = team }, ct);
+        public async Task BanAsync(UserRef user, CancellationToken ct = default)
+            => await hub.BanUser(RoomId, await resolve(user, ct).ConfigureAwait(false), ct).ConfigureAwait(false);
 
-        public Task SetTeamAsync(int userId, MatchTeam team, CancellationToken ct = default) => MoveAsync(userId, team: team, ct: ct);
+        public async Task MoveAsync(UserRef user, byte? slot = null, MatchTeam? team = null, CancellationToken ct = default)
+        {
+            int userId = await resolve(user, ct).ConfigureAwait(false);
+            await hub.MoveUser(RoomId, new MoveUserRequest { UserId = userId, Slot = slot, Team = team }, ct).ConfigureAwait(false);
+        }
+
+        public Task SetTeamAsync(UserRef user, MatchTeam team, CancellationToken ct = default) => MoveAsync(user, team: team, ct: ct);
 
         public Task SetLockedAsync(bool locked, CancellationToken ct = default)
             => hub.SetLockState(RoomId, new SetLockStateRequest { Locked = locked }, ct);
@@ -114,9 +151,11 @@ namespace RefereeHubApi.Session
 
         #region Referees
 
-        public Task AddRefereeAsync(int userId, CancellationToken ct = default) => hub.AddReferee(RoomId, userId, ct);
+        public async Task AddRefereeAsync(UserRef user, CancellationToken ct = default)
+            => await hub.AddReferee(RoomId, await resolve(user, ct).ConfigureAwait(false), ct).ConfigureAwait(false);
 
-        public Task RemoveRefereeAsync(int userId, CancellationToken ct = default) => hub.RemoveReferee(RoomId, userId, ct);
+        public async Task RemoveRefereeAsync(UserRef user, CancellationToken ct = default)
+            => await hub.RemoveReferee(RoomId, await resolve(user, ct).ConfigureAwait(false), ct).ConfigureAwait(false);
 
         #endregion
 
@@ -183,12 +222,51 @@ namespace RefereeHubApi.Session
         public Task RollAsync(uint? max = null, CancellationToken ct = default)
             => hub.Roll(RoomId, max == null ? null : new RollRequest { Max = max }, ct);
 
+        // metadata, star rating with the item's required mods, and mod-adjusted CS/AR/OD. Defaults to the current item.
+        public Task<BeatmapInfo> DescribeBeatmapAsync(PlaylistItem? item = null, CancellationToken ct = default)
+        {
+            item ??= State.CurrentPlaylistItem ?? throw new InvalidOperationException("The current playlist item isn't known yet.");
+            return session.Beatmaps.DescribeAsync(item, ct);
+        }
+
         public Task<IReadOnlyList<MultiplayerScore>> FetchScoresAsync(long playlistItemId, CancellationToken ct = default)
             => session.Api.GetPlaylistItemScoresAsync(RoomId, playlistItemId, ct);
 
         #endregion
 
         public Task CloseAsync(CancellationToken ct = default) => hub.CloseRoom(RoomId, ct);
+
+        // starts (or restarts) the room's timer; with announcement enabled, milestones are posted to room chat.
+        public void StartTimer(TimeSpan duration, TimerAnnouncement? announcement = null)
+        {
+            announcement ??= new TimerAnnouncement();
+            timerAnnouncer?.Dispose();
+            timerAnnouncer = Chat == null
+                ? null
+                : TimerAnnouncer.Attach(Timer, announcement, text => SendChatAsync(text), session.ReportBackgroundError);
+
+            Timer.Start(duration, announcement.MilestoneSeconds.Select(sec => TimeSpan.FromSeconds(sec)));
+
+            if (announcement is { Enabled: true, AnnounceStart: true } && Chat != null)
+                _ = announceStart(string.Format(announcement.StartedMessage, RefereeTimer.FormatRemaining(duration)));
+        }
+
+        public void StopTimer() => Timer.Stop();
+
+        private async Task announceStart(string text)
+        {
+            try
+            {
+                await SendChatAsync(text).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                session.ReportBackgroundError(ex);
+            }
+        }
+
+        public string ExportLog(ChatLogFormat? format = null)
+            => ChatLogFormatter.Format(Transcript, format, session.Users.GetCachedUsername);
 
         public Task<ChatMessage> SendChatAsync(string message, bool isAction = false, CancellationToken ct = default)
             => (Chat ?? throw new InvalidOperationException("Chat is not open for this room.", ChatError)).SendAsync(message, isAction, ct);

@@ -5,13 +5,17 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using RefereeHubApi.Api;
 using RefereeHubApi.Auth;
+using RefereeHubApi.Beatmaps;
 using RefereeHubApi.Chat;
+using RefereeHubApi.Highlights;
+using RefereeHubApi.Journal;
 using RefereeHubApi.Hub;
 using RefereeHubApi.Hub.Models;
 using RefereeHubApi.Hub.Models.Events;
 using RefereeHubApi.Hub.Models.Requests;
 using RefereeHubApi.Hub.Models.Responses;
 using RefereeHubApi.State;
+using RefereeHubApi.Users;
 
 namespace RefereeHubApi.Session
 {
@@ -28,6 +32,13 @@ namespace RefereeHubApi.Session
         public ChatClientOptions Chat { get; set; } = new ChatClientOptions();
 
         public int RoomLimit { get; set; } = 4;
+
+        public HighlightRules Highlights { get; set; } = new HighlightRules();
+
+        // null disables the journal. Entries are history only and never cause a rejoin.
+        public RoomJournal? Journal { get; set; }
+
+        public TimeSpan JournalSaveDelay { get; set; } = TimeSpan.FromSeconds(2);
 
         // includes rooms another ref added us to but we never joined.
         public bool JoinListedRoomsOnStart { get; set; } = true;
@@ -68,6 +79,7 @@ namespace RefereeHubApi.Session
         private readonly Subject<RefereeInvitedEvent> invitations = new Subject<RefereeInvitedEvent>();
         private readonly Subject<ServerShutdownWarning> shutdownWarnings = new Subject<ServerShutdownWarning>();
         private readonly Subject<Exception> backgroundErrors = new Subject<Exception>();
+        private readonly Subject<Highlight> highlights = new Subject<Highlight>();
         private readonly List<IDisposable> subscriptions = new List<IDisposable>();
         private readonly CancellationTokenSource cts = new CancellationTokenSource();
         private readonly SemaphoreSlim joinLock = new SemaphoreSlim(1, 1);
@@ -83,6 +95,13 @@ namespace RefereeHubApi.Session
         public RefereeHubConnection Hub { get; }
 
         public OsuApiClient Api { get; }
+
+        public UserDirectory Users { get; }
+
+        public BeatmapCatalog Beatmaps { get; }
+
+        // rooms left unfinished (e.g. after a crash), for a UI to offer rejoining.
+        public RoomJournal? Journal => options.Journal;
 
         public ChatClient? Chat => chat;
 
@@ -100,15 +119,30 @@ namespace RefereeHubApi.Session
 
         public IObservable<Exception> BackgroundErrors => backgroundErrors.AsObservable();
 
+        // live messages (not history) from room and PM channels that match HighlightRules.
+        public IObservable<Highlight> Highlights => highlights.AsObservable();
+
+        // can be swapped at runtime, e.g. when settings change.
+        public HighlightRules HighlightRules
+        {
+            get => Volatile.Read(ref highlightRules);
+            set => Volatile.Write(ref highlightRules, value);
+        }
+
+        private HighlightRules highlightRules;
+
         private RefereeSession(IRefereeCredentials credentials, RefereeSessionOptions options, HttpClient? http, TimeProvider time, ILoggerFactory loggerFactory)
         {
             this.options = options;
             this.time = time;
+            highlightRules = options.Highlights;
             logger = loggerFactory.CreateLogger<RefereeSession>();
             ownsHttp = http == null;
             this.http = http ?? new HttpClient();
 
             Api = new OsuApiClient(this.http, credentials, options.ApiBaseUrl, options.ApiRequestsPerMinute, loggerFactory.CreateLogger<OsuApiClient>());
+            Users = new UserDirectory(Api, time);
+            Beatmaps = new BeatmapCatalog(Api, time);
             Hub = new RefereeHubConnection(options.Hub, credentials.GetAccessTokenAsync, loggerFactory.CreateLogger<RefereeHubConnection>());
 
             subscriptions.Add(Hub.Events.Subscribe(routeEvent));
@@ -131,9 +165,17 @@ namespace RefereeHubApi.Session
             try
             {
                 session.Self = await session.Api.GetMeAsync(cancellationToken).ConfigureAwait(false);
+                session.Users.Remember(session.Self);
 
                 if (options.EnableChat)
+                {
                     session.chat = new ChatClient(session.Api, credentials, session.Self.Id, options.Chat, session.time, loggerFactory.CreateLogger<ChatClient>());
+                    session.subscriptions.Add(session.chat.PrivateChannelOpened.Subscribe(c =>
+                    {
+                        c.Messages.Subscribe(session.rememberSender);
+                        session.watchHighlights(c, null);
+                    }));
+                }
 
                 await session.Hub.StartAsync(cancellationToken).ConfigureAwait(false);
                 session.lastConnectionId = session.Hub.ConnectionId;
@@ -161,6 +203,14 @@ namespace RefereeHubApi.Session
                 await session.DisposeAsync().ConfigureAwait(false);
                 throw;
             }
+        }
+
+        // explicit, single-recipient PM from the ref's own account (C16: fails if the user blocks us or only accepts friends).
+        public async Task<ChatMessage> SendPrivateMessageAsync(UserRef user, string message, bool isAction = false, CancellationToken ct = default)
+        {
+            var client = chat ?? throw new InvalidOperationException("Chat is disabled for this session.");
+            int userId = await Users.ResolveIdAsync(user, ct).ConfigureAwait(false);
+            return await client.SendPrivateMessageAsync(userId, message, isAction, ct).ConfigureAwait(false);
         }
 
         public RefereeRoom? GetRoom(long roomId) => rooms.GetValueOrDefault(roomId);
@@ -247,7 +297,7 @@ namespace RefereeHubApi.Session
                 }
                 else
                 {
-                    room = new RefereeRoom(this, RoomStateReducer.FromJoin(response));
+                    room = new RefereeRoom(this, RoomStateReducer.FromJoin(response), time);
                     rooms[response.RoomId] = room;
                     added = true;
                 }
@@ -268,13 +318,15 @@ namespace RefereeHubApi.Session
 
             if (added)
             {
-                roomAdded.OnNext(room);
-
+                // chat is opened before RoomAdded fires, so subscribers can rely on room.Chat being set (or ChatError).
                 if (chat != null && room.Chat == null)
                 {
                     try
                     {
                         room.Chat = await chat.OpenChannelAsync(response.ChatChannelId, ct).ConfigureAwait(false);
+                        room.Chat.Messages.Subscribe(rememberSender);
+                        room.Transcript.Record(room.Chat);
+                        watchHighlights(room.Chat, room.RoomId);
                     }
                     catch (Exception ex) when (ex is not OperationCanceledException)
                     {
@@ -283,9 +335,38 @@ namespace RefereeHubApi.Session
                         backgroundErrors.OnNext(ex);
                     }
                 }
+
+                if (options.Journal != null)
+                    room.JournalRecorder = await RoomJournalRecorder.AttachAsync(options.Journal, room, time, options.JournalSaveDelay, ReportBackgroundError, ct).ConfigureAwait(false);
+
+                roomAdded.OnNext(room);
             }
 
             return room;
+        }
+
+        private void watchHighlights(ChatChannel channel, long? roomId)
+        {
+            channel.NewMessages.Subscribe(m =>
+            {
+                var context = new HighlightContext(Self.Id, Self.Username, channel.Kind, roomId);
+                var highlight = HighlightClassifier.Classify(m, context, HighlightRules);
+
+                if (highlight != null)
+                    highlights.OnNext(highlight);
+            });
+        }
+
+        internal void ReportBackgroundError(Exception ex)
+        {
+            logger.LogWarning("{Message}", ex.Message);
+            backgroundErrors.OnNext(ex);
+        }
+
+        private void rememberSender(ChatMessage message)
+        {
+            if (message.Sender != null)
+                Users.Remember(message.Sender);
         }
 
         private void routeEvent(IRoomEvent e)
@@ -339,6 +420,9 @@ namespace RefereeHubApi.Session
 
             room.MarkEnded(reason);
 
+            if (room.JournalRecorder is { } recorder)
+                _ = recorder.EndAsync();
+
             if (room.Chat != null)
                 chat?.CloseChannel(room.Chat.ChannelId);
 
@@ -363,6 +447,12 @@ namespace RefereeHubApi.Session
                     await Task.Delay(delay, time, cts.Token).ConfigureAwait(false);
                     scores = await Api.GetPlaylistItemScoresAsync(room.RoomId, playlistItemId, cts.Token).ConfigureAwait(false);
 
+                    foreach (var score in scores)
+                    {
+                        if (score.User != null)
+                            Users.Remember(score.User);
+                    }
+
                     if (scores.Count >= expected)
                         break;
                 }
@@ -377,7 +467,7 @@ namespace RefereeHubApi.Session
                 backgroundErrors.OnNext(ex);
             }
 
-            room.PublishResult(new MatchResult(room.RoomId, playlistItemId, match, scores, expected, scores.Count >= expected));
+            room.PublishResult(new MatchResult(room.RoomId, playlistItemId, match, scores, expected, scores.Count >= expected), time.GetUtcNow());
         }
 
         private async Task onReconnected(string? connectionId)
@@ -431,8 +521,13 @@ namespace RefereeHubApi.Session
             }
         }
 
+        private int disposed;
+
         public async ValueTask DisposeAsync()
         {
+            if (Interlocked.Exchange(ref disposed, 1) == 1)
+                return;
+
             await cts.CancelAsync().ConfigureAwait(false);
 
             foreach (var s in subscriptions)
@@ -448,7 +543,12 @@ namespace RefereeHubApi.Session
                 http.Dispose();
 
             foreach (var room in rooms.Values)
+            {
+                if (room.JournalRecorder is { } recorder)
+                    await recorder.DetachAsync().ConfigureAwait(false);
+
                 room.Complete();
+            }
 
             rooms.Clear();
             roomAdded.OnCompleted();
@@ -456,6 +556,7 @@ namespace RefereeHubApi.Session
             invitations.OnCompleted();
             shutdownWarnings.OnCompleted();
             backgroundErrors.OnCompleted();
+            highlights.OnCompleted();
             cts.Dispose();
         }
     }

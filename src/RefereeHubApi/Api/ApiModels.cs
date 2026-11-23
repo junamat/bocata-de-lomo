@@ -18,6 +18,104 @@ namespace RefereeHubApi.Api
         public Dictionary<string, JsonElement>? Extra { get; set; }
     }
 
+    public sealed class UsersResponse
+    {
+        [JsonPropertyName("users")]
+        public ApiUser[] Users { get; set; } = [];
+    }
+
+    public sealed class ApiBeatmapset
+    {
+        [JsonPropertyName("id")]
+        public int Id { get; set; }
+
+        [JsonPropertyName("artist")]
+        public string Artist { get; set; } = string.Empty;
+
+        [JsonPropertyName("title")]
+        public string Title { get; set; } = string.Empty;
+
+        [JsonPropertyName("creator")]
+        public string Creator { get; set; } = string.Empty;
+    }
+
+    public sealed class ApiBeatmap
+    {
+        [JsonPropertyName("id")]
+        public int Id { get; set; }
+
+        [JsonPropertyName("beatmapset_id")]
+        public int BeatmapsetId { get; set; }
+
+        [JsonPropertyName("beatmapset")]
+        public ApiBeatmapset? Beatmapset { get; set; }
+
+        [JsonPropertyName("version")]
+        public string Version { get; set; } = string.Empty;
+
+        [JsonPropertyName("difficulty_rating")]
+        public double DifficultyRating { get; set; }
+
+        // seconds
+        [JsonPropertyName("total_length")]
+        public double TotalLength { get; set; }
+
+        [JsonPropertyName("hit_length")]
+        public double HitLength { get; set; }
+
+        [JsonPropertyName("bpm")]
+        public double Bpm { get; set; }
+
+        [JsonPropertyName("cs")]
+        public double CircleSize { get; set; }
+
+        [JsonPropertyName("ar")]
+        public double ApproachRate { get; set; }
+
+        [JsonPropertyName("accuracy")]
+        public double OverallDifficulty { get; set; }
+
+        [JsonPropertyName("drain")]
+        public double DrainRate { get; set; }
+
+        [JsonPropertyName("mode")]
+        public string Mode { get; set; } = string.Empty;
+
+        [JsonPropertyName("mode_int")]
+        public int RulesetId { get; set; }
+
+        [JsonPropertyName("max_combo")]
+        public int? MaxCombo { get; set; }
+
+        public override string ToString()
+            => Beatmapset == null ? $"beatmap {Id} [{Version}]" : $"{Beatmapset.Artist} - {Beatmapset.Title} [{Version}] ({Beatmapset.Creator})";
+    }
+
+    public sealed class BeatmapsResponse
+    {
+        [JsonPropertyName("beatmaps")]
+        public ApiBeatmap[] Beatmaps { get; set; } = [];
+    }
+
+    public sealed class ApiDifficultyAttributes
+    {
+        [JsonPropertyName("star_rating")]
+        public double StarRating { get; set; }
+
+        [JsonPropertyName("max_combo")]
+        public int MaxCombo { get; set; }
+
+        // per-ruleset fields (aim_difficulty, ...).
+        [JsonExtensionData]
+        public Dictionary<string, JsonElement>? Extra { get; set; }
+    }
+
+    public sealed class BeatmapAttributesResponse
+    {
+        [JsonPropertyName("attributes")]
+        public ApiDifficultyAttributes Attributes { get; set; } = new ApiDifficultyAttributes();
+    }
+
     public sealed class ChatMessage
     {
         [JsonPropertyName("message_id")]
@@ -43,6 +141,31 @@ namespace RefereeHubApi.Api
 
         [JsonPropertyName("sender")]
         public ApiUser? Sender { get; set; }
+    }
+
+    public sealed class ApiChatChannel
+    {
+        [JsonPropertyName("channel_id")]
+        public long ChannelId { get; set; }
+
+        // "PM", "MULTIPLAYER", "PUBLIC", ...
+        [JsonPropertyName("type")]
+        public string Type { get; set; } = string.Empty;
+
+        [JsonPropertyName("name")]
+        public string? Name { get; set; }
+
+        [JsonPropertyName("users")]
+        public int[]? Users { get; set; }
+    }
+
+    public sealed class NewPrivateChatResponse
+    {
+        [JsonPropertyName("channel")]
+        public ApiChatChannel Channel { get; set; } = new ApiChatChannel();
+
+        [JsonPropertyName("message")]
+        public ChatMessage Message { get; set; } = new ChatMessage();
     }
 
     public sealed class MultiplayerScoreMod

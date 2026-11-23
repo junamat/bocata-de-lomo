@@ -1,0 +1,198 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:RefereeHubApi.Desktop.ViewModels"
+             xmlns:c="using:RefereeHubApi.Desktop.Controls"
+             x:Class="RefereeHubApi.Desktop.Views.ResultsView"
+             x:DataType="vm:ResultsViewModel">
+    <UserControl.DataTemplates>
+        <DataTemplate x:DataType="vm:ModChip">
+            <Border Classes="chip" Background="{Binding Brush}" Padding="5,0">
+                <TextBlock Text="{Binding Code}" Foreground="#111" />
+            </Border>
+        </DataTemplate>
+    </UserControl.DataTemplates>
+    <UserControl.Styles>
+        <Style Selector="ProgressBar.score">
+            <Setter Property="Height" Value="10" />
+            <Setter Property="MinHeight" Value="10" />
+            <Setter Property="CornerRadius" Value="999" />
+            <Setter Property="Background" Value="{StaticResource Track}" />
+        </Style>
+    </UserControl.Styles>
+
+    <Panel>
+        <c:TriangleField Seed="6" BiasX="0.75" />
+        <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
+            <DockPanel Grid.Row="0" Margin="28,14,28,0">
+                <Border DockPanel.Dock="Right" Classes="chip" Background="{StaticResource GoSoftBg}" Padding="8,2" IsVisible="{Binding !Partial}">
+                    <TextBlock Text="{Binding CountText}" Foreground="{StaticResource GoSoftFg}" />
+                </Border>
+                <StackPanel Orientation="Horizontal" Spacing="14">
+                    <TextBlock Text="{Binding MapText}" FontSize="22" FontWeight="Bold" VerticalAlignment="Center" />
+                    <StackPanel Orientation="Horizontal" Spacing="14" IsVisible="{Binding IsTeams}" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding RedName}" FontSize="16" FontWeight="Bold" Foreground="{StaticResource RedSoft}" />
+                        <TextBlock Text="vs" Foreground="{StaticResource Dim}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding BlueName}" FontSize="16" FontWeight="Bold" Foreground="{StaticResource BlueSoft}" />
+                    </StackPanel>
+                </StackPanel>
+            </DockPanel>
+
+            <Border Grid.Row="1" IsVisible="{Binding Partial}" Margin="28,12,28,0" Background="{StaticResource Yellow}" Padding="18,8">
+                <Border.RenderTransform>
+                    <SkewTransform AngleX="-10" />
+                </Border.RenderTransform>
+                <DockPanel>
+                    <DockPanel.RenderTransform>
+                        <SkewTransform AngleX="10" />
+                    </DockPanel.RenderTransform>
+                    <Button DockPanel.Dock="Right" Theme="{StaticResource Skew}" Background="{StaticResource YellowFg}" Foreground="#ffe9a8"
+                            FontWeight="ExtraBold" Content="Refetch" Command="{Binding RefetchCommand}" />
+                    <StackPanel Orientation="Horizontal" Spacing="14">
+                        <TextBlock Text="PARTIAL" FontWeight="ExtraBold" LetterSpacing="0.8" Foreground="{StaticResource YellowFg}" VerticalAlignment="Center" />
+                        <TextBlock Classes="display" Text="{Binding PartialText}" FontSize="22" FontWeight="Medium" Foreground="{StaticResource YellowFg}" />
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <Grid Grid.Row="2" ColumnDefinitions="*,360" ColumnSpacing="32" Margin="28,16,28,0">
+                <StackPanel Spacing="12" VerticalAlignment="Center">
+                    <Border Background="#E0151B18" CornerRadius="12,12,0,0" Padding="18,14" MaxWidth="640" HorizontalAlignment="Left" MinWidth="380">
+                        <StackPanel Spacing="4">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock Classes="mono" FontSize="11" Text="{Binding ItemText}" VerticalAlignment="Center" />
+                                <ItemsControl ItemsSource="{Binding Mods}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal" Spacing="3" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                </ItemsControl>
+                            </StackPanel>
+                            <TextBlock Text="{Binding Title}" FontSize="30" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{Binding Artist}" FontSize="16" Foreground="{StaticResource Text2}" />
+                            <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,4,0,0">
+                                <Border Classes="chip" Background="{StaticResource Star}" Padding="8,1">
+                                    <TextBlock Text="{Binding Stars, StringFormat='★ {0}'}" Foreground="{StaticResource StarFg}" FontSize="12" />
+                                </Border>
+                                <TextBlock Text="{Binding Difficulty}" FontSize="12" FontWeight="Bold" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding MapperText}" FontSize="12" Foreground="{StaticResource Muted}" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <StackPanel Orientation="Horizontal" Spacing="16">
+                        <StackPanel>
+                            <TextBlock Text="{Binding WinnerName}" FontSize="13" FontWeight="ExtraBold" LetterSpacing="1.3" Foreground="{Binding WinnerBrush}" />
+                            <TextBlock Classes="display" Text="{Binding WinnerScore}" FontSize="96" LineHeight="92" Foreground="{Binding WinnerPale}" />
+                        </StackPanel>
+                        <Border Classes="skew" Background="{StaticResource Yellow}" Padding="16,4" VerticalAlignment="Bottom" Margin="0,0,0,14" IsVisible="{Binding !Tie}">
+                            <TextBlock Text="WINS MAP" FontSize="13" FontWeight="ExtraBold" LetterSpacing="1" Foreground="{StaticResource YellowFg}" />
+                        </Border>
+                        <Border Classes="skew" Background="{StaticResource Chip}" Padding="16,4" VerticalAlignment="Bottom" Margin="0,0,0,14" IsVisible="{Binding Tie}">
+                            <TextBlock Text="TIE" FontSize="13" FontWeight="ExtraBold" LetterSpacing="1" />
+                        </Border>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <TextBlock Text="{Binding LoserName}" FontSize="13" FontWeight="ExtraBold" LetterSpacing="1.3" Foreground="{Binding LoserBrush}" VerticalAlignment="Center" />
+                        <TextBlock Classes="display" Text="{Binding LoserScore}" FontSize="44" Foreground="{Binding LoserPale}" />
+                        <TextBlock Text="{Binding Difference}" FontSize="14" Foreground="{StaticResource Muted}" VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Border Classes="skew" Background="#EB151B18" Padding="16,6" MinWidth="130">
+                            <StackPanel>
+                                <TextBlock Classes="label" Text="AVG ACCURACY" Foreground="{StaticResource Text}" />
+                                <TextBlock Classes="display" FontSize="24" FontWeight="Medium">
+                                    <Run Text="{Binding AccuracyText}" />
+                                    <Run Text="{Binding AccuracyOther}" FontSize="12" Foreground="{StaticResource Muted}" />
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+                        <Border Classes="skew" Background="#EB151B18" Padding="16,6" MinWidth="130">
+                            <StackPanel>
+                                <TextBlock Classes="label" Text="TOP SCORE" Foreground="{StaticResource Text}" />
+                                <TextBlock Classes="display" FontSize="24" FontWeight="Medium">
+                                    <Run Text="{Binding TopScore}" />
+                                    <Run Text="{Binding TopName}" FontSize="12" Foreground="{StaticResource Muted}" />
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+                        <Border Classes="skew" Background="#EB151B18" Padding="16,6" MinWidth="130" IsVisible="{Binding IsTeams}">
+                            <StackPanel>
+                                <TextBlock Classes="label" Text="MATCH" Foreground="{StaticResource Text}" />
+                                <TextBlock Classes="display" FontSize="24" FontWeight="Medium">
+                                    <Run Text="{Binding MatchScore}" />
+                                    <Run Text="{Binding BestOfText}" FontSize="12" Foreground="{StaticResource Muted}" />
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </StackPanel>
+
+                <Panel Grid.Column="1" Width="340" Height="340" VerticalAlignment="Center">
+                    <c:ShareRing Fraction="{Binding Share}" First="{Binding WinnerBrush}" Second="{Binding LoserBrush}" />
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="2">
+                        <TextBlock Text="SCORE SHARE" FontSize="13" FontWeight="ExtraBold" LetterSpacing="1.5" Foreground="{StaticResource Muted}" HorizontalAlignment="Center" />
+                        <TextBlock Classes="display" Text="{Binding ShareText}" FontSize="52" Foreground="{Binding WinnerPale}" HorizontalAlignment="Center" />
+                        <TextBlock Text="{Binding WinnerName}" FontSize="13" FontWeight="ExtraBold" LetterSpacing="1.5" Foreground="{Binding WinnerBrush}" HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Panel>
+            </Grid>
+
+            <Border Grid.Row="3" Classes="card" Margin="28,18,28,0" VerticalAlignment="Top">
+                <ScrollViewer>
+                    <ItemsControl ItemsSource="{Binding Rows}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:ScoreRowViewModel">
+                                <Border BorderBrush="{StaticResource RowLine}" BorderThickness="0,1,0,0" Padding="16,7" Opacity="{Binding Opacity}">
+                                    <Grid ColumnDefinitions="22,4,26,170,*,34,110,70,70,90" ColumnSpacing="12">
+                                        <TextBlock Classes="mono" Text="{Binding Rank}" VerticalAlignment="Center" />
+                                        <Border Grid.Column="1" Height="22" Background="{Binding TeamBrush}" />
+                                        <Border Grid.Column="2" Width="26" Height="26" CornerRadius="6" Background="{StaticResource Chip}">
+                                            <TextBlock Text="{Binding Initials}" FontSize="10" FontWeight="ExtraBold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxWidth="120" />
+                                            <Border Classes="chip" Padding="6,0" Background="{StaticResource ErrorBg}" IsVisible="{Binding Failed}">
+                                                <TextBlock Text="FAILED" FontSize="9" Foreground="{StaticResource ErrorFg}" />
+                                            </Border>
+                                        </StackPanel>
+                                        <ProgressBar Grid.Column="4" Classes="score" Minimum="0" Maximum="1" Value="{Binding Bar}" Foreground="{Binding TeamBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="5" Classes="display" Text="{Binding Grade}" FontSize="18" FontWeight="Medium" Foreground="{Binding GradeBrush}"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="6" Classes="display" Text="{Binding Score}" FontSize="20" FontWeight="Normal" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="7" Text="{Binding Accuracy}" Foreground="{StaticResource Text2}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="8" Text="{Binding Combo}" FontSize="12" Foreground="{StaticResource Muted}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                        <ItemsControl Grid.Column="9" ItemsSource="{Binding Mods}" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <StackPanel Orientation="Horizontal" Spacing="3" />
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                        </ItemsControl>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Border>
+
+            <DockPanel Grid.Row="4" Margin="28,16,28,18">
+                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" Spacing="6">
+                    <Button Theme="{StaticResource Skew}" MinHeight="52" Padding="28,0" Background="{StaticResource Accent}" Foreground="{StaticResource AccentFg}"
+                            FontWeight="ExtraBold" FontSize="15" Margin="0,0,12,0" Content="Back" Command="{Binding BackCommand}" />
+                    <Button Theme="{StaticResource Skew}" MinHeight="52" MinWidth="96" FontSize="12" Content="Refetch scores" Command="{Binding RefetchCommand}" />
+                    <Button Theme="{StaticResource Skew}" MinHeight="52" MinWidth="96" FontSize="12" Content="Save log" Command="{Binding SaveLogCommand}" />
+                </StackPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6">
+                    <Button Theme="{StaticResource Skew}" MinHeight="52" Padding="22,0" Background="{StaticResource Blue}" Foreground="{StaticResource BlueFg}"
+                            FontWeight="ExtraBold" Content="Post to chat" Command="{Binding PostToChatCommand}" />
+                    <Button Theme="{StaticResource Skew}" MinHeight="52" Padding="28,0" Background="{StaticResource Go}" Foreground="{StaticResource GoFg}"
+                            FontWeight="ExtraBold" FontSize="16" Content="Next map" Command="{Binding BackCommand}" />
+                </StackPanel>
+                <Panel />
+            </DockPanel>
+        </Grid>
+    </Panel>
+</UserControl>

@@ -1,0 +1,197 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Styles.Resources>
+        <!-- Parallelogram button: only the background is skewed, the content stays upright. -->
+        <ControlTheme x:Key="Skew" TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource Purple}" />
+            <Setter Property="Foreground" Value="{StaticResource Text}" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Padding" Value="16,0" />
+            <Setter Property="MinHeight" Value="36" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Panel>
+                        <Border Name="bg" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                            <Border.RenderTransform>
+                                <SkewTransform AngleX="-12" />
+                            </Border.RenderTransform>
+                        </Border>
+                        <ContentPresenter Name="PART_ContentPresenter"
+                                          Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          Foreground="{TemplateBinding Foreground}"
+                                          Padding="{TemplateBinding Padding}"
+                                          HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+                    </Panel>
+                </ControlTemplate>
+            </Setter>
+            <Style Selector="^:pointerover /template/ Border#bg">
+                <Setter Property="Opacity" Value="0.86" />
+            </Style>
+            <Style Selector="^:pressed /template/ Border#bg">
+                <Setter Property="Opacity" Value="0.7" />
+            </Style>
+            <Style Selector="^:disabled">
+                <Setter Property="Opacity" Value="0.5" />
+                <Setter Property="Cursor" Value="No" />
+            </Style>
+            <Style Selector="^:focus-visible /template/ Border#bg">
+                <Setter Property="BorderBrush" Value="{StaticResource Text}" />
+                <Setter Property="BorderThickness" Value="2" />
+            </Style>
+        </ControlTheme>
+
+        <!-- Flat icon button for toolbars and rows. -->
+        <ControlTheme x:Key="Icon" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{StaticResource Text2}" />
+            <Setter Property="Width" Value="40" />
+            <Setter Property="Height" Value="40" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Name="bg" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}"
+                            BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                        <ContentPresenter Content="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+            <Style Selector="^:pointerover /template/ Border#bg">
+                <Setter Property="Background" Value="#1f2824" />
+            </Style>
+            <Style Selector="^:disabled">
+                <Setter Property="Opacity" Value="0.4" />
+            </Style>
+            <Style Selector="^:focus-visible /template/ Border#bg">
+                <Setter Property="BorderBrush" Value="{StaticResource Text}" />
+                <Setter Property="BorderThickness" Value="1" />
+            </Style>
+        </ControlTheme>
+
+        <!-- Row / tile button with no chrome of its own. -->
+        <ControlTheme x:Key="Plain" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{StaticResource Text}" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Name="bg" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}"
+                            BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter Content="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}"
+                                          HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalContentAlignment="Center" />
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+            <Style Selector="^:pointerover /template/ Border#bg">
+                <Setter Property="Opacity" Value="0.9" />
+            </Style>
+        </ControlTheme>
+    </Styles.Resources>
+
+    <Style Selector="Window">
+        <Setter Property="FontFamily" Value="{StaticResource UiFont}" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Foreground" Value="{StaticResource Text}" />
+        <Setter Property="Background" Value="{StaticResource Bg}" />
+    </Style>
+
+    <Style Selector="TextBlock.label">
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="FontWeight" Value="ExtraBold" />
+        <Setter Property="LetterSpacing" Value="0.6" />
+        <Setter Property="Foreground" Value="{StaticResource Text2}" />
+    </Style>
+    <Style Selector="TextBlock.section">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="ExtraBold" />
+        <Setter Property="LetterSpacing" Value="1" />
+    </Style>
+    <Style Selector="TextBlock.mono, SelectableTextBlock.mono">
+        <Setter Property="FontFamily" Value="{StaticResource MonoFont}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="{StaticResource Muted}" />
+    </Style>
+    <Style Selector="TextBlock.display">
+        <Setter Property="FontFamily" Value="{StaticResource DisplayFont}" />
+        <Setter Property="FontWeight" Value="Light" />
+    </Style>
+    <Style Selector="TextBlock.muted">
+        <Setter Property="Foreground" Value="{StaticResource Muted}" />
+    </Style>
+
+    <Style Selector="Border.card">
+        <Setter Property="Background" Value="{StaticResource Card}" />
+        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="ClipToBounds" Value="True" />
+    </Style>
+    <Style Selector="Border.chip">
+        <Setter Property="CornerRadius" Value="999" />
+        <Setter Property="Padding" Value="7,1" />
+        <Setter Property="Background" Value="{StaticResource Chip}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Border.chip > TextBlock">
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="FontWeight" Value="ExtraBold" />
+        <Setter Property="LetterSpacing" Value="0.4" />
+    </Style>
+    <!-- Parallelogram tag/stat block (non-interactive). -->
+    <Style Selector="Border.skew">
+        <Setter Property="RenderTransform">
+            <SkewTransform AngleX="-12" />
+        </Setter>
+    </Style>
+    <Style Selector="Border.skew > :is(Control)">
+        <Setter Property="RenderTransform">
+            <SkewTransform AngleX="12" />
+        </Setter>
+    </Style>
+
+    <Style Selector="TextBox">
+        <Setter Property="MinHeight" Value="38" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Padding" Value="12,0" />
+    </Style>
+    <Style Selector="TextBox.mono">
+        <Setter Property="FontFamily" Value="{StaticResource MonoFont}" />
+        <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style Selector="ComboBox">
+        <Setter Property="MinHeight" Value="38" />
+    </Style>
+
+    <Style Selector="ListBoxItem">
+        <Setter Property="CornerRadius" Value="6" />
+    </Style>
+    <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter, ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource AccentRow}" />
+        <Setter Property="Foreground" Value="{StaticResource Text}" />
+    </Style>
+    <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="#1f2824" />
+        <Setter Property="Foreground" Value="{StaticResource Text}" />
+    </Style>
+
+    <Style Selector="FlyoutPresenter">
+        <Setter Property="Padding" Value="14" />
+        <Setter Property="CornerRadius" Value="10" />
+    </Style>
+
+    <Style Selector="PathIcon">
+        <Setter Property="Width" Value="16" />
+        <Setter Property="Height" Value="16" />
+    </Style>
+</Styles>

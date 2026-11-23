@@ -1,8 +1,10 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/RefereeHubApi.Desktop/RefereeHubApi.Desktop.csproj" />
     <Project Path="src/RefereeHubApi/RefereeHubApi.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/RefereeHubApi.Desktop.Tests/RefereeHubApi.Desktop.Tests.csproj" />
     <Project Path="tests/RefereeHubApi.HubTests/RefereeHubApi.HubTests.csproj" />
     <Project Path="tests/RefereeHubApi.Tests/RefereeHubApi.Tests.csproj" />
   </Folder>

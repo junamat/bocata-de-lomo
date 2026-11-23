@@ -153,5 +153,103 @@ namespace RefereeHubApi.Tests
             Assert.Equal("polled", (await next).Content);
             Assert.False(chat.WebSocketDropsMessages);
         }
+
+        private const long pm_channel_id = 777;
+
+        private void stubPrivateChannel()
+        {
+            http.OnJson("POST", "/api/v2/chat/new", _ =>
+            {
+                var m = ApiFixtures.Message(1000, pm_channel_id, "hi", sender: TestIds.SELF);
+                lock (serverMessages)
+                    serverMessages.Add(m);
+                return new { channel = new { channel_id = pm_channel_id, type = "PM", name = "PlayerA" }, message = m };
+            });
+            http.OnJson("POST", $"/api/v2/chat/channels/{pm_channel_id}/messages", _ => ApiFixtures.Message(1001, pm_channel_id, "again", sender: TestIds.SELF));
+            http.OnJson("GET", $"/api/v2/chat/channels/{pm_channel_id}/messages", r =>
+            {
+                lock (serverMessages)
+                    return serverMessages.Where(m => (long)m.GetType().GetProperty("channel_id")!.GetValue(m)! == pm_channel_id).ToArray();
+            });
+        }
+
+        [Fact]
+        public async Task PrivateMessageOpensChannelThroughChatNewOnce()
+        {
+            stubPrivateChannel();
+            var (chat, api) = create(fastOptions());
+            await using var _ = chat;
+            using var __ = api;
+
+            var opened = Wait.For(chat.PrivateChannelOpened);
+            var first = await chat.SendPrivateMessageAsync(TestIds.PLAYER_A, "hi");
+            var channel = await opened;
+            var second = await chat.SendPrivateMessageAsync(TestIds.PLAYER_A, "again");
+
+            Assert.Equal(1000, first.MessageId);
+            Assert.Equal(1001, second.MessageId);
+            Assert.Equal(ChatChannelKind.Private, channel.Kind);
+            Assert.Equal(TestIds.PLAYER_A, channel.PeerUserId);
+            Assert.Same(channel, chat.GetPrivateChannel(TestIds.PLAYER_A));
+            Assert.Equal(1, http.Count("POST", "/api/v2/chat/new"));
+            Assert.Contains(http.Bodies, b => b != null && b.Contains($"\"target_id\":{TestIds.PLAYER_A}"));
+            await Assert.ThrowsAsync<ArgumentException>(() => chat.SendPrivateMessageAsync(TestIds.SELF, "me"));
+        }
+
+        [Fact]
+        public async Task KnownPrivateChannelIsPolled()
+        {
+            stubPrivateChannel();
+            var (chat, api) = create(fastOptions());
+            await using var _ = chat;
+            using var __ = api;
+
+            await chat.SendPrivateMessageAsync(TestIds.PLAYER_A, "hi");
+            var channel = chat.GetPrivateChannel(TestIds.PLAYER_A)!;
+
+            var reply = Wait.For(channel.NewMessages, m => m.MessageId == 1002);
+            serverHas(ApiFixtures.Message(1002, pm_channel_id, "reply", sender: TestIds.PLAYER_A));
+            Assert.Equal("reply", (await reply).Content);
+        }
+
+        [Fact]
+        public async Task IncomingPrivateMessageOnSocketOpensChannel()
+        {
+            var socket = new FakeNotificationSocket();
+            var (chat, api) = create(fastOptions(() => socket));
+            await using var _ = chat;
+            using var __ = api;
+
+            await chat.OpenChannelAsync(channel_id);
+            await Wait.For(chat.Transport, t => t == ChatTransport.WebSocket);
+
+            ChatMessage? firstSeen = null;
+            using var sub = chat.PrivateChannelOpened.Subscribe(c => c.NewMessages.Subscribe(m => firstSeen ??= m));
+
+            socket.Push(new
+            {
+                @event = "chat.message.new",
+                data = new
+                {
+                    messages = new[] { ApiFixtures.Message(50, 888, "hey ref", sender: TestIds.PLAYER_B) },
+                    users = new[] { new { id = TestIds.PLAYER_B, username = "PlayerB" } },
+                },
+            });
+
+            await Wait.Until(() => firstSeen != null);
+            var channel = chat.GetPrivateChannel(TestIds.PLAYER_B)!;
+            Assert.Equal(888, channel.ChannelId);
+            Assert.Equal("hey ref", firstSeen!.Content);
+            Assert.Equal("PlayerB", firstSeen.Sender!.Username);
+
+            // our own message to an unknown channel (sent from another client) doesn't open anything.
+            socket.Push(new
+            {
+                @event = "chat.message.new",
+                data = new { messages = new[] { ApiFixtures.Message(51, 889, "from lazer", sender: TestIds.SELF) }, users = Array.Empty<object>() },
+            });
+            await Task.Delay(100);
+            Assert.Single(chat.PrivateChannels);
+        }
     }
 }

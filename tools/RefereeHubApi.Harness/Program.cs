@@ -1,15 +1,17 @@
 ﻿// Dev console for trying the library against the real servers with your own OAuth app.
+// Room, chat, timer and log commands come from the library's shared command table; only
+// account/connection commands are defined here.
 
 using System.Diagnostics;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using RefereeHubApi.Auth;
+using RefereeHubApi.Commands;
 using RefereeHubApi.Hub;
-using RefereeHubApi.Hub.Models;
-using RefereeHubApi.Hub.Models.Requests;
+using RefereeHubApi.Journal;
 using RefereeHubApi.Secrets;
 using RefereeHubApi.Session;
-using MatchType = RefereeHubApi.Hub.Models.MatchType;
+using RefereeHubApi.Settings;
 
 string profileName = Environment.GetEnvironmentVariable("REFEREEHUB_PROFILE") ?? "default";
 var logLevel = Environment.GetEnvironmentVariable("REFEREEHUB_DEBUG") == "1" ? LogLevel.Debug : LogLevel.Warning;
@@ -19,248 +21,148 @@ using var http = new HttpClient();
 var store = SecretStores.CreateForCurrentOs();
 var oauth = new OsuOAuthClient(http);
 var json = new JsonSerializerOptions { WriteIndented = false };
+var settingsStore = new SettingsStore();
+
+RefereeSettings settings;
+
+try
+{
+    settings = await settingsStore.LoadAsync();
+}
+catch (SettingsException ex)
+{
+    Console.WriteLine($"{ex.Message} Using defaults.");
+    settings = new RefereeSettings();
+}
 
 RefereeProfile? profile = await RefereeProfile.LoadAsync(profileName, store, oauth);
-RefereeSession? session = null;
-RefereeRoom? current = null;
+bool quit = false;
 
-Console.WriteLine($"RefereeHubApi harness. Profile '{profileName}'{(profile == null ? " (not set up: run 'setup')" : profile.HasTokens ? " (logged in)" : " (run 'login')")}. Type 'help'.");
+var context = new CommandContext { Settings = settings, Output = Console.WriteLine };
 
-while (true)
-{
-    Console.Write(current == null ? "> " : $"[{current.RoomId}]> ");
-    string? line = Console.ReadLine();
-    if (line == null)
-        break;
-
-    string[] parts = line.Trim().Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
-    if (parts.Length == 0)
-        continue;
-
-    string cmd = parts[0].ToLowerInvariant();
-    string rest = parts.Length > 1 ? parts[1].Trim() : string.Empty;
-    string[] argv = rest.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-
-    try
+var table = CommandTable.Default.With(
+[
+    new CommandDefinition
     {
-        switch (cmd)
+        Name = "setup",
+        Category = "Account",
+        Usage = "setup",
+        Summary = "store your OAuth app's client ID and secret in the OS keychain",
+        Bind = a =>
         {
-            case "help":
-                printHelp();
-                break;
-
-            case "quit":
-            case "exit":
-                goto end;
-
-            case "setup":
+            a.Expect(0, 0);
+            return async (ctx, ct) =>
             {
                 string clientId = prompt("OAuth client ID");
                 string clientSecret = prompt("OAuth client secret");
                 string portText = prompt($"Callback port [{OAuthClientConfig.DEFAULT_CALLBACK_PORT}]", allowEmpty: true);
                 int port = string.IsNullOrEmpty(portText) ? OAuthClientConfig.DEFAULT_CALLBACK_PORT : int.Parse(portText);
 
-                profile = await RefereeProfile.CreateAsync(profileName, new OAuthClientConfig { ClientId = clientId, ClientSecret = clientSecret, CallbackPort = port }, store, oauth);
-                Console.WriteLine($"Saved to the OS keychain. The OAuth app's callback URL must be exactly {profile.Client.RedirectUri}");
-                break;
-            }
-
-            case "login":
-                requireProfile();
-                await profile!.LoginAsync(openBrowser);
-                Console.WriteLine("Logged in; tokens stored in the OS keychain.");
-                break;
-
-            case "logout":
-                requireProfile();
-                await profile!.LogoutAsync();
-                Console.WriteLine("Tokens removed.");
-                break;
-
-            case "connect":
+                profile = await RefereeProfile.CreateAsync(profileName, new OAuthClientConfig { ClientId = clientId, ClientSecret = clientSecret, CallbackPort = port }, store, oauth, cancellationToken: ct);
+                ctx.Output($"Saved to the OS keychain. The OAuth app's callback URL must be exactly {profile.Client.RedirectUri}");
+            };
+        },
+    },
+    new CommandDefinition
+    {
+        Name = "login",
+        Category = "Account",
+        Usage = "login",
+        Summary = "log in through the browser",
+        Bind = a =>
+        {
+            a.Expect(0, 0);
+            return async (ctx, ct) =>
             {
-                requireProfile();
-                if (session != null)
+                await requireProfile().LoginAsync(openBrowser, ct);
+                ctx.Output("Logged in; tokens stored in the OS keychain.");
+            };
+        },
+    },
+    new CommandDefinition
+    {
+        Name = "logout",
+        Category = "Account",
+        Usage = "logout",
+        Summary = "remove stored tokens",
+        Bind = a =>
+        {
+            a.Expect(0, 0);
+            return async (ctx, ct) =>
+            {
+                await requireProfile().LogoutAsync(ct);
+                ctx.Output("Tokens removed.");
+            };
+        },
+    },
+    new CommandDefinition
+    {
+        Name = "connect",
+        Category = "Account",
+        Usage = "connect",
+        Summary = "connect to the hub and rejoin your rooms",
+        Bind = a =>
+        {
+            a.Expect(0, 0);
+            return async (ctx, ct) =>
+            {
+                if (ctx.Session != null)
                 {
-                    Console.WriteLine("Already connected.");
-                    break;
+                    ctx.Output("Already connected.");
+                    return;
                 }
 
-                session = await RefereeSession.StartAsync(profile!, loggerFactory: loggerFactory);
-                wire(session);
-                Console.WriteLine($"Connected as {session.Self.Username} ({session.Self.Id}). Rooms joined: {string.Join(", ", session.Rooms.Select(r => r.RoomId))}");
-                current = session.Rooms.FirstOrDefault();
-                break;
-            }
+                var options = new RefereeSessionOptions { Highlights = settings.Highlights, Journal = new RoomJournal() };
+                var s = await RefereeSession.StartAsync(requireProfile(), options, loggerFactory: loggerFactory, cancellationToken: ct);
+                ctx.Session = s;
+                wire(s);
+                ctx.Output($"Connected as {s.Self.Username} ({s.Self.Id}). Rooms joined: {string.Join(", ", s.Rooms.Select(r => r.RoomId))}");
+                ctx.Room = s.Rooms.FirstOrDefault();
 
-            case "rooms":
+                if ((await s.Journal!.ListAsync(ct)).Any(e => s.GetRoom(e.RoomId) == null))
+                    ctx.Output("Unfinished rooms in the journal: see 'journal'.");
+            };
+        },
+    },
+    new CommandDefinition
+    {
+        Name = "quit",
+        Aliases = ["exit"],
+        Category = "Account",
+        Usage = "quit",
+        Summary = "leave the harness (rooms stay open)",
+        Bind = a =>
+        {
+            a.Expect(0, 0);
+            return (_, _) =>
             {
-                var s = requireSession();
-                var listed = await s.ListRoomsAsync();
-                Console.WriteLine($"Referee of: {string.Join(", ", listed)}");
-                foreach (var r in s.Rooms)
-                    Console.WriteLine($"  joined {r.RoomId} '{r.State.Name}' players={r.State.Players.Count} chat={(r.Chat != null ? "on" : "off")}");
-                break;
-            }
+                quit = true;
+                return Task.CompletedTask;
+            };
+        },
+    },
+]);
 
-            case "make":
-            {
-                var s = requireSession();
-                if (argv.Length < 3)
-                    throw new ArgumentException("make <beatmap_id> <ruleset_id> <name...>");
+Console.WriteLine($"RefereeHubApi harness. Profile '{profileName}'{(profile == null ? " (not set up: run 'setup')" : profile.HasTokens ? " (logged in)" : " (run 'login')")}. Settings: {settingsStore.FilePath}. Type 'help'.");
+Console.WriteLine("Env: REFEREEHUB_PROFILE=<name>, REFEREEHUB_DEBUG=1");
 
-                current = await s.MakeRoomAsync(new MakeRoomRequest
-                {
-                    BeatmapId = int.Parse(argv[0]),
-                    RulesetId = int.Parse(argv[1]),
-                    RoomName = string.Join(' ', argv.Skip(2)),
-                });
-                Console.WriteLine($"Room {current.RoomId} created. Password: {current.State.Password}");
-                break;
-            }
+while (!quit)
+{
+    Console.Write(context.Room is { HasEnded: false } room ? $"[{room.RoomId}]> " : "> ");
+    string? line = Console.ReadLine();
+    if (line == null)
+        break;
 
-            case "join":
-                current = await requireSession().JoinRoomAsync(long.Parse(argv[0]));
-                Console.WriteLine($"Joined {current.RoomId} '{current.State.Name}'.");
-                break;
+    if (string.IsNullOrWhiteSpace(line))
+        continue;
 
-            case "use":
-                current = requireSession().GetRoom(long.Parse(argv[0])) ?? throw new ArgumentException("Not joined to that room.");
-                break;
-
-            case "state":
-                printState(requireRoom());
-                break;
-
-            case "invite":
-                await requireRoom().InviteAsync(int.Parse(argv[0]));
-                break;
-
-            case "kick":
-                await requireRoom().KickAsync(int.Parse(argv[0]));
-                break;
-
-            case "ban":
-                await requireRoom().BanAsync(int.Parse(argv[0]));
-                break;
-
-            case "addref":
-                await requireRoom().AddRefereeAsync(int.Parse(argv[0]));
-                break;
-
-            case "removeref":
-                await requireRoom().RemoveRefereeAsync(int.Parse(argv[0]));
-                break;
-
-            case "name":
-                await requireRoom().SetNameAsync(rest);
-                break;
-
-            case "password":
-                await requireRoom().SetPasswordAsync(rest == "-" ? string.Empty : rest);
-                break;
-
-            case "type":
-                await requireRoom().SetMatchTypeAsync(argv[0] switch
-                {
-                    "h2h" => MatchType.HeadToHead,
-                    "tv" => MatchType.TeamVersus,
-                    _ => throw new ArgumentException("type h2h|tv"),
-                });
-                break;
-
-            case "queue":
-                await requireRoom().SetQueueModeAsync(argv[0] switch
-                {
-                    "host" => QueueMode.HostOnly,
-                    "all" => QueueMode.AllPlayers,
-                    "rr" => QueueMode.AllPlayersRoundRobin,
-                    _ => throw new ArgumentException("queue host|all|rr"),
-                });
-                break;
-
-            case "size":
-                await requireRoom().SetSizeAsync(byte.Parse(argv[0]));
-                break;
-
-            case "map":
-                await requireRoom().SetMapAsync(int.Parse(argv[0]), argv.Length > 1 ? int.Parse(argv[1]) : null);
-                break;
-
-            case "mods":
-            {
-                if (argv.Length == 0)
-                    throw new ArgumentException("mods <required|none> [allowed|none] [freestyle]");
-
-                var required = parseMods(argv[0]);
-                var allowed = argv.Length > 1 && argv[1] != "freestyle" ? parseMods(argv[1]) : null;
-                bool? freestyle = argv.Contains("freestyle") ? true : null;
-                await requireRoom().SetModsAsync(required, allowed, freestyle);
-                break;
-            }
-
-            case "team":
-                await requireRoom().SetTeamAsync(int.Parse(argv[0]), argv[1] == "red" ? MatchTeam.Red : argv[1] == "blue" ? MatchTeam.Blue : throw new ArgumentException("team <user> red|blue"));
-                break;
-
-            case "move":
-                await requireRoom().MoveAsync(int.Parse(argv[0]), slot: byte.Parse(argv[1]));
-                break;
-
-            case "lock":
-                await requireRoom().SetLockedAsync(true);
-                break;
-
-            case "unlock":
-                await requireRoom().SetLockedAsync(false);
-                break;
-
-            case "start":
-                await requireRoom().StartAsync(argv.Length > 0 ? int.Parse(argv[0]) : null);
-                break;
-
-            case "aborttimer":
-                await requireRoom().StopCountdownAsync();
-                break;
-
-            case "abort":
-                await requireRoom().AbortAsync();
-                break;
-
-            case "roll":
-                await requireRoom().RollAsync(argv.Length > 0 ? uint.Parse(argv[0]) : null);
-                break;
-
-            case "say":
-                await requireRoom().SendChatAsync(rest);
-                break;
-
-            case "me":
-                await requireRoom().SendChatAsync(rest, isAction: true);
-                break;
-
-            case "scores":
-            {
-                var room = requireRoom();
-                long item = argv.Length > 0 ? long.Parse(argv[0]) : room.State.LastCompletedPlaylistItemId ?? throw new ArgumentException("scores <playlist_item_id>");
-                foreach (var sc in (await room.FetchScoresAsync(item)).OrderByDescending(s => s.TotalScore))
-                    Console.WriteLine($"  {sc.User?.Username ?? sc.UserId.ToString()}: {sc.TotalScore:N0} {sc.Accuracy:P2} x{sc.MaxCombo} {(sc.Passed ? "" : "FAILED")} [{string.Join(",", sc.Mods.Select(m => m.Acronym))}]");
-                break;
-            }
-
-            case "close":
-                await requireRoom().CloseAsync();
-                break;
-
-            case "reconnect":
-                await requireSession().ReconnectAsync(closeRoomsFirst: argv.Contains("close"));
-                Console.WriteLine("Reconnected.");
-                break;
-
-            default:
-                Console.WriteLine("Unknown command. Type 'help'.");
-                break;
-        }
+    try
+    {
+        await table.ExecuteAsync(line, context);
+    }
+    catch (CommandException ex)
+    {
+        Console.WriteLine(ex.Message);
     }
     catch (RefereeHubException ex)
     {
@@ -272,35 +174,11 @@ while (true)
     }
 }
 
-end:
-if (session != null)
-    await session.DisposeAsync();
+if (context.Session != null)
+    await context.Session.DisposeAsync();
 return;
 
-void printHelp()
-{
-    Console.WriteLine("""
-        setup | login | logout | connect | rooms | quit
-        make <beatmap> <ruleset> <name...> | join <room> | use <room> | state | close
-        invite|kick|ban|addref|removeref <user>
-        name <text> | password <text|-> | type h2h|tv | queue host|all|rr | size <0|2-16>
-        map <beatmap> [ruleset] | mods <HD,HR|none> [allowed|none] [freestyle]
-        team <user> red|blue | move <user> <slot> | lock | unlock
-        start [seconds] | aborttimer | abort | roll [max]
-        say <text> | me <text> | scores [playlist_item] | reconnect [close]
-        Env: REFEREEHUB_PROFILE=<name>, REFEREEHUB_DEBUG=1
-        """);
-}
-
-void requireProfile()
-{
-    if (profile == null)
-        throw new InvalidOperationException("Run 'setup' first.");
-}
-
-RefereeSession requireSession() => session ?? throw new InvalidOperationException("Run 'connect' first.");
-
-RefereeRoom requireRoom() => current is { HasEnded: false } ? current : throw new InvalidOperationException("No current room: 'make', 'join' or 'use'.");
+RefereeProfile requireProfile() => profile ?? throw new CommandException("Run 'setup' first.");
 
 string prompt(string label, bool allowEmpty = false)
 {
@@ -312,9 +190,6 @@ string prompt(string label, bool allowEmpty = false)
             return value;
     }
 }
-
-static Mod[] parseMods(string text)
-    => text == "none" ? [] : text.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(a => new Mod(a.ToUpperInvariant())).ToArray();
 
 static Task openBrowser(Uri uri)
 {
@@ -337,21 +212,27 @@ static Task openBrowser(Uri uri)
 
 void wire(RefereeSession s)
 {
-    s.RoomAdded.Subscribe(r => attach(r));
+    s.RoomAdded.Subscribe(attach);
     foreach (var r in s.Rooms)
         attach(r);
 
     s.RoomRemoved.Subscribe(r =>
     {
         Console.WriteLine($"! room {r.RoomId} gone: {r.State.Ended}");
-        if (current == r)
-            current = null;
+        if (context.Room == r)
+            context.Room = null;
     });
     s.Invitations.Subscribe(i => Console.WriteLine($"! added as referee to room {i.RoomId}: 'join {i.RoomId}' to accept"));
     s.ServerShuttingDown.Subscribe(w => Console.WriteLine($"! SERVER SHUTTING DOWN ({w.TimeRemaining}). Close rooms when you can, then 'reconnect' (or 'reconnect close')."));
     s.ConnectionStatus.Subscribe(st => Console.WriteLine($"* hub {st}"));
     s.BackgroundErrors.Subscribe(e => Console.WriteLine($"* background error: {e.Message}"));
-    s.Chat?.Transport.Subscribe(t => Console.WriteLine($"* chat via {t}"));
+    s.Highlights.Subscribe(h => Console.WriteLine($"! highlight ({h.Kinds}) <{h.Message.Sender?.Username ?? h.Message.SenderId.ToString()}> {h.Message.Content}"));
+
+    if (s.Chat != null)
+    {
+        s.Chat.Transport.Subscribe(t => Console.WriteLine($"* chat via {t}"));
+        s.Chat.PrivateChannelOpened.Subscribe(c => c.NewMessages.Subscribe(m => Console.WriteLine($"  [pm {c.PeerUserId}] <{m.Sender?.Username ?? m.SenderId.ToString()}> {(m.IsAction ? "*" : "")}{m.Content}")));
+    }
 }
 
 void attach(RefereeRoom r)
@@ -367,22 +248,9 @@ void attach(RefereeRoom r)
         }
     });
     r.Chat?.Messages.Subscribe(m => Console.WriteLine($"  [{r.RoomId}] <{m.Sender?.Username ?? m.SenderId.ToString()}> {(m.IsAction ? "*" : "")}{m.Content}"));
-}
-
-void printState(RefereeRoom r)
-{
-    var st = r.State;
-    Console.WriteLine($"Room {st.RoomId} '{st.Name}' pw='{st.Password}' {st.MatchType} {st.QueueMode} size={st.MaxParticipants?.ToString() ?? "-"} locked={st.Locked}");
-    var item = st.CurrentPlaylistItem;
-    Console.WriteLine(item == null ? "Current item: ?" : $"Current item {item.PlaylistItemId}: beatmap {item.BeatmapId} ruleset {item.RulesetId} mods [{string.Join(",", item.RequiredMods.Select(m => m.Acronym))}] allowed [{string.Join(",", item.AllowedMods.Select(m => m.Acronym))}] freestyle={item.Freestyle}");
-    Console.WriteLine($"Players ({st.Players.Count}):");
-    foreach (var p in st.Players.Values.OrderBy(p => p.Slot ?? 99))
-        Console.WriteLine($"  {p.UserId} slot={p.Slot?.ToString() ?? "-"} team={p.Team?.ToString() ?? "-"} {p.Status} mods [{string.Join(",", p.Mods.Select(m => m.Acronym))}]");
-    Console.WriteLine($"Referees: {string.Join(", ", st.Referees)} (joined: {string.Join(", ", st.JoinedReferees)})");
-    if (st.MatchStartCountdown is { } c)
-        Console.WriteLine($"Countdown ends {c.EndsAt:T}");
-    if (st.Match is { } m)
-        Console.WriteLine($"Match in progress on item {m.PlaylistItemId} since {m.StartedAt:T}");
-    if (st.LastRoll is { } roll)
-        Console.WriteLine($"Last roll: {roll.UserId} rolled {roll.Result}/{roll.Max}");
+    r.Timer.Ticks.Subscribe(t =>
+    {
+        if (t.Remaining.TotalSeconds % 10 == 0 || t.Remaining.TotalSeconds <= 5)
+            Console.WriteLine($"  [{r.RoomId}] timer {RefereeHubApi.Timers.RefereeTimer.FormatRemaining(t.Remaining)}");
+    });
 }
