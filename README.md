@@ -37,7 +37,7 @@ The client secret and tokens are stored in your OS keychain, nowhere else.
 dotnet run --project src/RefereeHubApi.Desktop
 ```
 
-The app uses the Outfit, Quicksand and JetBrains Mono fonts when they're installed and falls back to Inter otherwise. In the match room, chat lines starting with `/` run the same commands as the harness (`/help` lists them). Scores per map come from the server; the match score (best-of pips) is kept by the ref with the +/- buttons. Alert sounds can be picked in settings but aren't played yet.
+The app ships the Outfit, Quicksand and JetBrains Mono fonts (see `src/RefereeHubApi.Desktop/Assets/Fonts`), so it looks the same on every machine. In the match room, chat lines starting with `/` run the same commands as the harness (`/help` lists them). Scores per map come from the server; the match score (best-of pips) is kept by the ref with the +/- buttons. Alert sounds can be picked in settings but aren't played yet.
 
 The harness is still there for trying things from a terminal:
 

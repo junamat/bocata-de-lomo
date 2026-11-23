@@ -162,14 +162,21 @@
                             <c:Slant Classes="heading">
                                 <TextBlock Text="KEYS &amp; MACROS" />
                             </c:Slant>
-                            <ListBox ItemsSource="{Binding Macros}" SelectedItem="{Binding SelectedMacro}" Background="Transparent" MaxHeight="220">
+                            <ListBox ItemsSource="{Binding Macros}" SelectedItem="{Binding SelectedMacro}" Background="Transparent" MaxHeight="220"
+                                     Grid.IsSharedSizeScope="True">
                                 <ListBox.ItemTemplate>
                                     <DataTemplate x:DataType="vm:MacroViewModel">
-                                        <Grid ColumnDefinitions="70,*,Auto" ColumnSpacing="10">
+                                        <!-- key column sizes to the longest combo and stays aligned across rows -->
+                                        <Grid ColumnSpacing="10">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" MinWidth="70" SharedSizeGroup="MacroKey" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
                                             <Border Classes="chip" HorizontalAlignment="Left">
                                                 <TextBlock Classes="mono" Text="{Binding Key}" FontSize="11" Foreground="{StaticResource Text}" FontWeight="Normal" />
                                             </Border>
-                                            <TextBlock Grid.Column="1" Text="{Binding Name}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="1" Text="{Binding Name}" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                                             <TextBlock Grid.Column="2" Text="{Binding Steps}" FontSize="12" Foreground="{StaticResource Muted}" VerticalAlignment="Center" />
                                         </Grid>
                                     </DataTemplate>

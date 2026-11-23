@@ -47,6 +47,7 @@ public abstract class AppScene : VisualScene
         settings.Macros["intro"] = ["say Welcome! Captains, please /roll", "timer 2m"];
         settings.Macros["broken"] = ["lock", "macro intro", "nosuchcommand"];
         settings.Keybinds["F1"] = "intro";
+        settings.Keybinds["Ctrl+Shift+Alt+F12"] = "broken";
         settings.Highlights.Keywords = ["pause", "sub"];
     }
 

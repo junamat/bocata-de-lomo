@@ -155,6 +155,9 @@
         <Setter Property="FontFamily" Value="{StaticResource MonoFont}" />
         <Setter Property="FontSize" Value="13" />
     </Style>
+    <Style Selector="TextBox.command">
+        <Setter Property="FontFamily" Value="{StaticResource MonoFont}" />
+    </Style>
     <Style Selector="ComboBox">
         <Setter Property="MinHeight" Value="38" />
     </Style>

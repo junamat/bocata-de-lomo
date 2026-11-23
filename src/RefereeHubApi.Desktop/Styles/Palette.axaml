@@ -1,10 +1,12 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- Outfit / Quicksand / JetBrains Mono are used when installed; Inter ships with the app. -->
-    <FontFamily x:Key="UiFont">Outfit, fonts:Inter#Inter, sans-serif</FontFamily>
-    <FontFamily x:Key="DisplayFont">Quicksand, fonts:Inter#Inter, sans-serif</FontFamily>
-    <FontFamily x:Key="MonoFont">JetBrains Mono, DejaVu Sans Mono, Consolas, monospace</FontFamily>
+    <!-- Outfit / Quicksand / JetBrains Mono ship in Assets/Fonts (static weights, OFL); Inter is the fallback.
+         One folder per family: Avalonia looks for a missing glyph in the whole folder before the next
+         family, so sharing one would draw Cyrillic names in JetBrains Mono. -->
+    <FontFamily x:Key="UiFont">avares://RefereeHub/Assets/Fonts/Outfit#Outfit, fonts:Inter#Inter, sans-serif</FontFamily>
+    <FontFamily x:Key="DisplayFont">avares://RefereeHub/Assets/Fonts/Quicksand#Quicksand, fonts:Inter#Inter, sans-serif</FontFamily>
+    <FontFamily x:Key="MonoFont">avares://RefereeHub/Assets/Fonts/JetBrainsMono#JetBrains Mono, DejaVu Sans Mono, Consolas, monospace</FontFamily>
 
     <Color x:Key="BgColor">#0d1210</Color>
     <SolidColorBrush x:Key="Bg" Color="#0d1210" />

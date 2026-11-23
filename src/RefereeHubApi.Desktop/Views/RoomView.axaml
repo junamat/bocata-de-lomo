@@ -241,7 +241,7 @@
                         <StackPanel Orientation="Horizontal" Spacing="22" HorizontalAlignment="Right">
                             <StackPanel HorizontalAlignment="Right" Spacing="2">
                                 <TextBlock Text="{Binding RedName}" FontSize="13" FontWeight="ExtraBold" LetterSpacing="1.3" Foreground="{StaticResource Red}" HorizontalAlignment="Right" />
-                                <TextBlock Classes="display" Text="{Binding ScoreRed}" FontSize="112" LineHeight="106" Foreground="{StaticResource RedPale}" HorizontalAlignment="Right" />
+                                <TextBlock Classes="display" Text="{Binding ScoreRed}" FontSize="112" Margin="0,0,0,-28" Foreground="{StaticResource RedPale}" HorizontalAlignment="Right" />
                                 <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right">
                                     <Button Theme="{StaticResource Skew}" MinHeight="24" Width="30" Padding="0" Background="{StaticResource Chip}"
                                             Foreground="{StaticResource Text2}" Content="−" Command="{Binding RedMinusCommand}" AutomationProperties.Name="Red minus one" />
@@ -252,7 +252,7 @@
                             <TextBlock Classes="display" Text="–" FontSize="64" Foreground="{StaticResource Dim}" VerticalAlignment="Center" />
                             <StackPanel Spacing="2">
                                 <TextBlock Text="{Binding BlueName}" FontSize="13" FontWeight="ExtraBold" LetterSpacing="1.3" Foreground="{StaticResource Blue}" />
-                                <TextBlock Classes="display" Text="{Binding ScoreBlue}" FontSize="112" LineHeight="106" Foreground="{StaticResource BluePale}" />
+                                <TextBlock Classes="display" Text="{Binding ScoreBlue}" FontSize="112" Margin="0,0,0,-28" Foreground="{StaticResource BluePale}" />
                                 <StackPanel Orientation="Horizontal" Spacing="4">
                                     <Button Theme="{StaticResource Skew}" MinHeight="24" Width="30" Padding="0" Background="{StaticResource Chip}"
                                             Foreground="{StaticResource Text2}" Content="−" Command="{Binding BlueMinusCommand}" AutomationProperties.Name="Blue minus one" />
@@ -509,7 +509,7 @@
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
                             </Border>
-                            <TextBox Name="ChatBox" Text="{Binding ChatInput}" PlaceholderText="Message, or / for commands" FontFamily="{Binding ChatFont}"
+                            <TextBox Name="ChatBox" Text="{Binding ChatInput}" PlaceholderText="Message, or / for commands" Classes.command="{Binding IsCommand}"
                                      MinHeight="36" KeyDown="chatKeyDown" AutomationProperties.Name="Message or command" />
                         </StackPanel>
 

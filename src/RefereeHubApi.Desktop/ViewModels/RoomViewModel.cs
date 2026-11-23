@@ -468,14 +468,12 @@ public sealed partial class RoomViewModel : ViewModelBase, IDisposable
     private void SelectActivity() => ShowChat = false;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsCommand), nameof(ChatFont))]
+    [NotifyPropertyChangedFor(nameof(IsCommand))]
     public partial string ChatInput { get; set; } = string.Empty;
 
     public bool IsCommand => ChatInput.StartsWith('/');
 
     public bool ShowHints => IsCommand && CommandHints.Count > 0;
-
-    public FontFamily ChatFont => IsCommand ? new FontFamily("JetBrains Mono, DejaVu Sans Mono, monospace") : FontFamily.Default;
 
     partial void OnChatInputChanged(string value)
     {
