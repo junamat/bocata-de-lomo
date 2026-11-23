@@ -36,7 +36,7 @@ public sealed class AppServices : IAsyncDisposable
 
     public string? SecretsError { get; private set; }
 
-    public SettingsStore SettingsStore { get; } = new SettingsStore();
+    public SettingsStore SettingsStore { get; init; } = new SettingsStore();
 
     public RefereeSettings Settings { get; private set; } = new RefereeSettings();
 

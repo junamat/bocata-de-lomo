@@ -13,7 +13,7 @@ using RefereeHubApi.Users;
 
 namespace RefereeHubApi.Desktop.ViewModels;
 
-public sealed partial class MainWindowViewModel : ViewModelBase
+public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
 {
     private readonly List<IDisposable> sessionSubscriptions = new List<IDisposable>();
     private readonly DispatcherTimer clock;
@@ -251,6 +251,20 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         }));
 
         sessionSubscriptions.Add(s.Invitations.OnUi(i => RoomsPage?.OnInvited(i.RoomId)));
+    }
+
+    // stops the clock and drops session wiring; the session itself belongs to AppServices.
+    public void Dispose()
+    {
+        clock.Stop();
+        Services.ErrorReported -= onError;
+
+        foreach (var s in sessionSubscriptions)
+            s.Dispose();
+        sessionSubscriptions.Clear();
+
+        foreach (var r in RoomTabs)
+            r.Dispose();
     }
 
     private void addRoom(RefereeRoom room)

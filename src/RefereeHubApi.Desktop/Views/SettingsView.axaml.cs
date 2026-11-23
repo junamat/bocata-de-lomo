@@ -29,7 +29,7 @@ public partial class SettingsView : UserControl
 
         bool functionKey = e.Key is >= Key.F1 and <= Key.F24;
         bool combo = e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Alt);
-        string? gesture = MainWindow.Gesture(e);
+        string? gesture = MainView.Gesture(e);
         if (gesture == null || (!functionKey && !combo))
             return;
 

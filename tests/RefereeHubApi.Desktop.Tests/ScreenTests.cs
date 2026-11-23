@@ -152,7 +152,7 @@ public sealed class ScreenTests : IAsyncDisposable
         services.Settings.Highlights.Keywords = ["pause", "sub"];
 
         var window = new MainWindow { Width = 1440, Height = 980 };
-        services.Shell = window;
+        services.Shell = window.View;
         var vm = new MainWindowViewModel(services);
         window.DataContext = vm;
         window.Show();
@@ -197,7 +197,7 @@ public sealed class ScreenTests : IAsyncDisposable
     {
         var services = new AppServices();
         var window = new MainWindow { Width = 1440, Height = 900 };
-        services.Shell = window;
+        services.Shell = window.View;
         var vm = new MainWindowViewModel(services);
         window.DataContext = vm;
         vm.Page = new SetupViewModel(vm);

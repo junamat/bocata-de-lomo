@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:RefereeHubApi.Desktop.ViewModels"
              xmlns:c="using:RefereeHubApi.Desktop.Controls"
+             xmlns:v="using:RefereeHubApi.Desktop.Views"
              x:Class="RefereeHubApi.Desktop.Views.SettingsView"
              x:DataType="vm:SettingsViewModel">
     <UserControl.Styles>
@@ -31,7 +32,7 @@
                 <DockPanel>
                     <Button DockPanel.Dock="Right" Theme="{StaticResource Skew}" Background="{StaticResource ErrorBg}" Foreground="{StaticResource ErrorFg}"
                             FontWeight="ExtraBold" Content="Sign out" VerticalAlignment="Center"
-                            Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).SignOutCommand}" />
+                            Command="{Binding $parent[v:MainView].((vm:MainWindowViewModel)DataContext).SignOutCommand}" />
                     <StackPanel>
                         <TextBlock Text="Settings" FontSize="30" FontWeight="SemiBold" />
                         <TextBlock Classes="mono" Text="{Binding FilePath}" />
