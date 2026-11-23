@@ -38,7 +38,7 @@ Add or update tests with your change:
 
 - `tests/RefereeHubApi.Tests` for pure logic.
 - `tests/RefereeHubApi.HubTests` for anything going through the hub (uses an in-process fake hub).
-- `tests/RefereeHubApi.Desktop.Tests` for screens. They render headless against the fake hub and fail on binding errors. Set `REFEREEHUB_SNAPSHOTS=<dir>` to save PNGs and check the result by eye.
+- `tools/RefereeHubApi.VisualTests/Scenes` for screens, modelled on osu-framework's test scenes. A scene subclasses `AppScene` (the real app against the fake hub) and lives in a namespace named after the screen it covers. Each `[Test]` or `[TestCase(...)]` method adds steps and shows up as a label; `[SetUpSteps]` methods run before every test, and `AppScene`'s own set-up rebuilds the app and hub so tests don't share state. Steps: `AddStep`, `AddRepeatStep`, `AddWaitStep`, `AddToggleStep` (on then off when run automatically), `AddUntilStep` (10 s timeout), `AddAssert`, and `AddSliderStep` (only moved by hand). Look at it in the browser (`dotnet run --project tools/RefereeHubApi.VisualTests`); `tests/RefereeHubApi.Desktop.Tests` runs every scene headless and fails on a failed step or a binding error. Set `REFEREEHUB_SNAPSHOTS=<dir>` to save PNGs.
 
 `dotnet test` must pass before a PR is merged.
 
@@ -51,7 +51,7 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org/):
 ```
 
 - Types: `feat`, `fix`, `refactor`, `perf`, `test`, `docs`, `build`, `ci`, `chore`.
-- Scopes (optional): `lib`, `desktop`, `harness`, `tests`, `docs`.
+- Scopes (optional): `lib`, `desktop`, `harness`, `visualtests`, `tests`, `docs`.
 - Summary in the imperative, lower case, no trailing period, about 70 characters at most.
 - Breaking changes get a `!` after the type/scope and a `BREAKING CHANGE:` line in the body.
 

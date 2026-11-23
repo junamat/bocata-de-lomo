@@ -1,0 +1,129 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:b="using:RefereeHubApi.VisualTests.Browser"
+        xmlns:f="using:RefereeHubApi.VisualTests.Framework"
+        x:Class="RefereeHubApi.VisualTests.Browser.BrowserWindow"
+        x:DataType="b:BrowserViewModel"
+        Title="RefereeHub visual tests" Width="1780" Height="1000" MinWidth="1000" MinHeight="640"
+        Background="{StaticResource Bg}">
+
+    <Window.KeyBindings>
+        <KeyBinding Gesture="Ctrl+R" Command="{Binding ReloadCommand}" />
+        <KeyBinding Gesture="Ctrl+H" Command="{Binding ToggleListCommand}" />
+    </Window.KeyBindings>
+
+    <Grid ColumnDefinitions="Auto,*">
+
+        <!-- scene picker and steps; Ctrl+H hides it, Ctrl+F brings it back with the search focused -->
+        <Border Grid.Column="0" Width="340" IsVisible="{Binding ListVisible}" Background="{StaticResource Bar}" BorderBrush="{StaticResource BarLine}" BorderThickness="0,0,1,0">
+            <Grid RowDefinitions="Auto,*,Auto,1.3*">
+
+                <StackPanel Grid.Row="0" Margin="14,14,14,8" Spacing="8">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="VISUAL TESTS" FontWeight="ExtraBold" LetterSpacing="0.8" Foreground="{StaticResource Accent}" />
+                        <TextBlock Classes="muted" FontSize="12" VerticalAlignment="Bottom" Text="{Binding SceneCount, StringFormat='{}{0} scenes'}" />
+                    </StackPanel>
+                    <TextBox Name="Search" Text="{Binding Filter}" PlaceholderText="Search scenes (Ctrl+F, Enter opens the first)">
+                        <TextBox.KeyBindings>
+                            <KeyBinding Gesture="Enter" Command="{Binding PickFirstCommand}" />
+                        </TextBox.KeyBindings>
+                    </TextBox>
+                </StackPanel>
+
+                <ListBox Grid.Row="1" ItemsSource="{Binding Entries}" SelectedItem="{Binding Selected}" Background="Transparent">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="b:SceneEntry">
+                            <StackPanel>
+                                <TextBlock Classes="section" Text="{Binding Category}" IsVisible="{Binding ShowHeader}" Margin="0,8,0,4" />
+                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Margin="8,0,0,0" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <GridSplitter Grid.Row="2" Height="4" Background="{StaticResource BarLine}" ResizeDirection="Rows" />
+
+                <DockPanel Grid.Row="3" Margin="14,12">
+                    <StackPanel DockPanel.Dock="Top" Spacing="6">
+                        <TextBlock Text="{Binding Title}" FontWeight="Bold" FontSize="15" TextWrapping="Wrap" />
+                        <TextBlock Classes="muted" FontSize="12" Text="{Binding Description}" TextWrapping="Wrap"
+                                   IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+                            <Button Content="Run all" Command="{Binding RunAllCommand}" ToolTip.Tip="Rebuild the scene and run every test" />
+                            <Button Content="Reset" Command="{Binding ReloadCommand}" ToolTip.Tip="Rebuild the scene and run only the first test's set-up (Ctrl+R)" />
+                            <CheckBox Content="Auto-run" IsChecked="{Binding AutoRun}" ToolTip.Tip="Run every test when a scene is picked; off runs set-up only" />
+                        </StackPanel>
+                        <Grid ColumnDefinitions="Auto,*,52" Margin="0,0,0,6">
+                            <TextBlock Classes="muted" FontSize="12" Text="Step delay" VerticalAlignment="Center" Margin="0,0,10,0" />
+                            <Slider Grid.Column="1" Minimum="0" Maximum="1000" SmallChange="50" Value="{Binding StepDelayMs}" />
+                            <TextBlock Grid.Column="2" Classes="muted" FontSize="12" Text="{Binding StepDelayText}" VerticalAlignment="Center" HorizontalAlignment="Right" />
+                        </Grid>
+                        <TextBlock Classes="muted" FontSize="12" Text="{Binding Summary}" />
+                        <TextBlock Text="{Binding LoadError}" IsVisible="{Binding HasLoadError}" Foreground="{StaticResource ErrorFg}" TextWrapping="Wrap" />
+                    </StackPanel>
+
+                    <ScrollViewer Margin="0,6,0,0">
+                        <ItemsControl ItemsSource="{Binding Steps}">
+                            <ItemsControl.DataTemplates>
+                                <!-- label: one test; click resets every step and runs just this test -->
+                                <DataTemplate DataType="f:LabelStep">
+                                    <Button Theme="{StaticResource Plain}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                                            Padding="8,6" Margin="0,8,0,2" CornerRadius="6" Background="{StaticResource Chip}"
+                                            ToolTip.Tip="Reset and run this test"
+                                            Command="{Binding $parent[b:BrowserWindow].((b:BrowserViewModel)DataContext).RunTestCommand}"
+                                            CommandParameter="{Binding}">
+                                        <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="13" Foreground="{StaticResource Text}" TextWrapping="Wrap" />
+                                    </Button>
+                                </DataTemplate>
+
+                                <!-- runnable step: light strip coloured by kind, green once passed, red on failure -->
+                                <DataTemplate DataType="f:SceneStep">
+                                    <StackPanel Margin="0,1">
+                                        <Button Theme="{StaticResource Plain}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="0"
+                                                CornerRadius="4" Background="{Binding Background}" ToolTip.Tip="Run this step once more"
+                                                Command="{Binding $parent[b:BrowserWindow].((b:BrowserViewModel)DataContext).RunStepCommand}"
+                                                CommandParameter="{Binding}">
+                                            <DockPanel>
+                                                <Border DockPanel.Dock="Left" Width="4" Background="{Binding Light}" CornerRadius="2,0,0,2" />
+                                                <StackPanel Orientation="Horizontal" Spacing="8" Margin="8,5">
+                                                    <TextBlock Text="{Binding Prefix}" FontSize="11" Foreground="{StaticResource Dim}" VerticalAlignment="Center"
+                                                               IsVisible="{Binding Prefix, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                                    <TextBlock Text="{Binding Text}" FontSize="13" Foreground="{StaticResource Body}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                                                </StackPanel>
+                                            </DockPanel>
+                                        </Button>
+                                        <SelectableTextBlock Text="{Binding Error}" IsVisible="{Binding HasError}" Foreground="{StaticResource ErrorFg}"
+                                                             FontSize="12" TextWrapping="Wrap" Margin="12,2,0,4" />
+                                    </StackPanel>
+                                </DataTemplate>
+
+                                <!-- slider: moved by hand only; right-click puts it back to its start value -->
+                                <DataTemplate DataType="f:SliderStep">
+                                    <Border Margin="0,1" Padding="10,4,8,2" CornerRadius="4" BorderBrush="#4169e1" BorderThickness="4,0,0,0"
+                                            ToolTip.Tip="Drag to change; right-click resets">
+                                        <Border.ContextFlyout>
+                                            <MenuFlyout>
+                                                <MenuItem Header="Reset to start value"
+                                                          Command="{Binding $parent[b:BrowserWindow].((b:BrowserViewModel)DataContext).ResetSliderCommand}"
+                                                          CommandParameter="{Binding}" />
+                                            </MenuFlyout>
+                                        </Border.ContextFlyout>
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Text}" FontSize="13" Foreground="{StaticResource Body}" />
+                                            <Slider Minimum="{Binding Min}" Maximum="{Binding Max}" Value="{Binding Value}"
+                                                    SmallChange="{Binding SmallChange}" LargeChange="{Binding SmallChange}"
+                                                    IsSnapToTickEnabled="{Binding Whole}" TickFrequency="1" Margin="0,-6,0,-6" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.DataTemplates>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
+            </Grid>
+        </Border>
+
+        <!-- the scene itself -->
+        <ContentControl Grid.Column="1" Content="{Binding Content}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
+    </Grid>
+</Window>

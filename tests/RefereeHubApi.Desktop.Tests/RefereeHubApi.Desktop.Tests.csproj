@@ -18,11 +18,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\RefereeHubApi.Desktop\RefereeHubApi.Desktop.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Include="..\RefereeHubApi.Tests\Infrastructure\TestHelpers.cs" Link="Infrastructure\TestHelpers.cs" />
-    <Compile Include="..\RefereeHubApi.HubTests\Infrastructure\FakeRefereeHub.cs" Link="Infrastructure\FakeRefereeHub.cs" />
+    <!-- the scenes and the fake hub they run against -->
+    <ProjectReference Include="..\..\tools\RefereeHubApi.VisualTests\RefereeHubApi.VisualTests.csproj" />
   </ItemGroup>
 
   <ItemGroup>

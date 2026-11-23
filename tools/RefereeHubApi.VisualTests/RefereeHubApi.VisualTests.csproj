@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- interactive browser of visual test scenes: each scene puts the real app UI into a known state against a fake hub. -->
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="RefereeHubApi.Hub.Models.MatchType" Alias="MatchType" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\RefereeHubApi.Desktop\RefereeHubApi.Desktop.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="RefereeHubApi.Desktop.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\tests\RefereeHubApi.Tests\Infrastructure\TestHelpers.cs" Link="Infrastructure\TestHelpers.cs" />
+    <Compile Include="..\..\tests\RefereeHubApi.HubTests\Infrastructure\FakeRefereeHub.cs" Link="Infrastructure\FakeRefereeHub.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="12.1.6" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.1.6" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.6" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="10.0.15" />
+  </ItemGroup>
+
+</Project>
