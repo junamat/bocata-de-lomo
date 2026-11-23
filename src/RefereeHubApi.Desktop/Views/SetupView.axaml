@@ -19,7 +19,7 @@
                 <TextBlock Classes="display" FontSize="72" LineHeight="74" Margin="0,0,0,10" Text="bocata de lomo." TextWrapping="Wrap" />
                 <StackPanel Orientation="Horizontal" Spacing="10">
                     <c:Icon Kind="lock" Width="18" Height="18" Foreground="{StaticResource Go}" />
-                    <TextBlock Text="Your account, your keys, kept on this computer." Foreground="{StaticResource Text2}" FontSize="15" />
+                    <TextBlock Text="Your account and your keys are always kept on this computer." Foreground="{StaticResource Text2}" FontSize="15" />
                 </StackPanel>
             </StackPanel>
 
