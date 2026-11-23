@@ -11,13 +11,13 @@
             <Setter Property="CornerRadius" Value="10" />
             <Setter Property="Padding" Value="16,14" />
         </Style>
-        <Style Selector="Border.heading">
+        <Style Selector="c|Slant.heading">
             <Setter Property="Background" Value="{StaticResource Accent}" />
             <Setter Property="Padding" Value="12,3" />
             <Setter Property="HorizontalAlignment" Value="Left" />
             <Setter Property="Margin" Value="0,0,0,4" />
         </Style>
-        <Style Selector="Border.heading > TextBlock">
+        <Style Selector="c|Slant.heading > TextBlock">
             <Setter Property="FontSize" Value="12" />
             <Setter Property="FontWeight" Value="ExtraBold" />
             <Setter Property="LetterSpacing" Value="1" />
@@ -44,9 +44,9 @@
                         <!-- highlights -->
                         <Border Classes="section">
                             <StackPanel Spacing="10">
-                                <Border Classes="heading skew">
+                                <c:Slant Classes="heading">
                                     <TextBlock Text="HIGHLIGHTS" />
-                                </Border>
+                                </c:Slant>
                                 <ToggleSwitch IsChecked="{Binding Mentions}" OnContent="My username in chat" OffContent="My username in chat" />
                                 <ToggleSwitch IsChecked="{Binding RefereeCalls}" OnContent="Someone says &quot;ref&quot;" OffContent="Someone says &quot;ref&quot;" />
                                 <ToggleSwitch IsChecked="{Binding PrivateMessages}" OnContent="Private messages" OffContent="Private messages" />
@@ -78,9 +78,9 @@
                         <!-- timer -->
                         <Border Classes="section">
                             <StackPanel Spacing="10">
-                                <Border Classes="heading skew">
+                                <c:Slant Classes="heading">
                                     <TextBlock Text="PICK TIMER IN CHAT" />
-                                </Border>
+                                </c:Slant>
                                 <ToggleSwitch IsChecked="{Binding AnnounceTimer}" OnContent="Post timer to room chat" OffContent="Post timer to room chat" />
                                 <StackPanel Spacing="10" IsEnabled="{Binding AnnounceTimer}">
                                     <ToggleSwitch IsChecked="{Binding AnnounceStart}" OnContent="Announce when it starts" OffContent="Announce when it starts" />
@@ -119,14 +119,14 @@
                         <!-- sounds -->
                         <Border Classes="section">
                             <StackPanel Spacing="6">
-                                <Border Classes="heading skew">
+                                <c:Slant Classes="heading">
                                     <TextBlock Text="SOUNDS" />
-                                </Border>
+                                </c:Slant>
                                 <ItemsControl ItemsSource="{Binding Alerts}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="vm:AlertViewModel">
                                             <Grid ColumnDefinitions="Auto,*,120" ColumnSpacing="10" Margin="0,3">
-                                                <Border Classes="skew" Width="6" Height="18" Background="{Binding Color}" />
+                                                <c:Slant Width="10" Height="18" Background="{Binding Color}" />
                                                 <TextBlock Grid.Column="1" Text="{Binding Label}" VerticalAlignment="Center" />
                                                 <ComboBox Grid.Column="2" ItemsSource="{Binding Options}" SelectedItem="{Binding Sound}" HorizontalAlignment="Stretch"
                                                           AutomationProperties.Name="{Binding Label, StringFormat='{}{0} sound'}" />
@@ -141,9 +141,9 @@
                         <!-- chat log -->
                         <Border Classes="section">
                             <StackPanel Spacing="10">
-                                <Border Classes="heading skew">
+                                <c:Slant Classes="heading">
                                     <TextBlock Text="CHAT LOG" />
-                                </Border>
+                                </c:Slant>
                                 <StackPanel Orientation="Horizontal" Spacing="0">
                                     <Button Theme="{StaticResource Skew}" Background="{Binding UtcBg}" Foreground="{Binding UtcFg}" Content="UTC" Command="{Binding PickUtcCommand}" />
                                     <Button Theme="{StaticResource Skew}" Background="{Binding LocalBg}" Foreground="{Binding LocalFg}" Content="Local" Command="{Binding PickLocalCommand}" />
@@ -159,9 +159,9 @@
                     <!-- keys & macros -->
                     <Border Grid.Column="2" Classes="section" VerticalAlignment="Top">
                         <StackPanel Spacing="10">
-                            <Border Classes="heading skew">
+                            <c:Slant Classes="heading">
                                 <TextBlock Text="KEYS &amp; MACROS" />
-                            </Border>
+                            </c:Slant>
                             <ListBox ItemsSource="{Binding Macros}" SelectedItem="{Binding SelectedMacro}" Background="Transparent" MaxHeight="220">
                                 <ListBox.ItemTemplate>
                                     <DataTemplate x:DataType="vm:MacroViewModel">

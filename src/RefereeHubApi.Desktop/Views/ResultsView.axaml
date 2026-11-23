@@ -37,14 +37,8 @@
                 </StackPanel>
             </DockPanel>
 
-            <Border Grid.Row="1" IsVisible="{Binding Partial}" Margin="28,12,28,0" Background="{StaticResource Yellow}" Padding="18,8">
-                <Border.RenderTransform>
-                    <SkewTransform AngleX="-10" />
-                </Border.RenderTransform>
+            <c:Slant Angle="10" Grid.Row="1" IsVisible="{Binding Partial}" Margin="28,12,28,0" Background="{StaticResource Yellow}" Padding="18,8">
                 <DockPanel>
-                    <DockPanel.RenderTransform>
-                        <SkewTransform AngleX="10" />
-                    </DockPanel.RenderTransform>
                     <Button DockPanel.Dock="Right" Theme="{StaticResource Skew}" Background="{StaticResource YellowFg}" Foreground="#ffe9a8"
                             FontWeight="ExtraBold" Content="Refetch" Command="{Binding RefetchCommand}" />
                     <StackPanel Orientation="Horizontal" Spacing="14">
@@ -52,7 +46,7 @@
                         <TextBlock Classes="display" Text="{Binding PartialText}" FontSize="22" FontWeight="Medium" Foreground="{StaticResource YellowFg}" />
                     </StackPanel>
                 </DockPanel>
-            </Border>
+            </c:Slant>
 
             <Grid Grid.Row="2" ColumnDefinitions="*,360" ColumnSpacing="32" Margin="28,16,28,0">
                 <StackPanel Spacing="12" VerticalAlignment="Center">
@@ -85,12 +79,12 @@
                             <TextBlock Text="{Binding WinnerName}" FontSize="13" FontWeight="ExtraBold" LetterSpacing="1.3" Foreground="{Binding WinnerBrush}" />
                             <TextBlock Classes="display" Text="{Binding WinnerScore}" FontSize="96" LineHeight="92" Foreground="{Binding WinnerPale}" />
                         </StackPanel>
-                        <Border Classes="skew" Background="{StaticResource Yellow}" Padding="16,4" VerticalAlignment="Bottom" Margin="0,0,0,14" IsVisible="{Binding !Tie}">
+                        <c:Slant Background="{StaticResource Yellow}" Padding="16,4" VerticalAlignment="Bottom" Margin="0,0,0,14" IsVisible="{Binding !Tie}">
                             <TextBlock Text="WINS MAP" FontSize="13" FontWeight="ExtraBold" LetterSpacing="1" Foreground="{StaticResource YellowFg}" />
-                        </Border>
-                        <Border Classes="skew" Background="{StaticResource Chip}" Padding="16,4" VerticalAlignment="Bottom" Margin="0,0,0,14" IsVisible="{Binding Tie}">
+                        </c:Slant>
+                        <c:Slant Background="{StaticResource Chip}" Padding="16,4" VerticalAlignment="Bottom" Margin="0,0,0,14" IsVisible="{Binding Tie}">
                             <TextBlock Text="TIE" FontSize="13" FontWeight="ExtraBold" LetterSpacing="1" />
-                        </Border>
+                        </c:Slant>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Spacing="12">
                         <TextBlock Text="{Binding LoserName}" FontSize="13" FontWeight="ExtraBold" LetterSpacing="1.3" Foreground="{Binding LoserBrush}" VerticalAlignment="Center" />
@@ -99,7 +93,7 @@
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                        <Border Classes="skew" Background="#EB151B18" Padding="16,6" MinWidth="130">
+                        <c:Slant Background="#EB151B18" Padding="16,6" MinWidth="130">
                             <StackPanel>
                                 <TextBlock Classes="label" Text="AVG ACCURACY" Foreground="{StaticResource Text}" />
                                 <TextBlock Classes="display" FontSize="24" FontWeight="Medium">
@@ -107,8 +101,8 @@
                                     <Run Text="{Binding AccuracyOther}" FontSize="12" Foreground="{StaticResource Muted}" />
                                 </TextBlock>
                             </StackPanel>
-                        </Border>
-                        <Border Classes="skew" Background="#EB151B18" Padding="16,6" MinWidth="130">
+                        </c:Slant>
+                        <c:Slant Background="#EB151B18" Padding="16,6" MinWidth="130">
                             <StackPanel>
                                 <TextBlock Classes="label" Text="TOP SCORE" Foreground="{StaticResource Text}" />
                                 <TextBlock Classes="display" FontSize="24" FontWeight="Medium">
@@ -116,8 +110,8 @@
                                     <Run Text="{Binding TopName}" FontSize="12" Foreground="{StaticResource Muted}" />
                                 </TextBlock>
                             </StackPanel>
-                        </Border>
-                        <Border Classes="skew" Background="#EB151B18" Padding="16,6" MinWidth="130" IsVisible="{Binding IsTeams}">
+                        </c:Slant>
+                        <c:Slant Background="#EB151B18" Padding="16,6" MinWidth="130" IsVisible="{Binding IsTeams}">
                             <StackPanel>
                                 <TextBlock Classes="label" Text="MATCH" Foreground="{StaticResource Text}" />
                                 <TextBlock Classes="display" FontSize="24" FontWeight="Medium">
@@ -125,7 +119,7 @@
                                     <Run Text="{Binding BestOfText}" FontSize="12" Foreground="{StaticResource Muted}" />
                                 </TextBlock>
                             </StackPanel>
-                        </Border>
+                        </c:Slant>
                     </StackPanel>
                 </StackPanel>
 

@@ -52,7 +52,7 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="IBrush">
-                                    <Border Classes="skew" Width="22" Height="12" Background="{Binding}" />
+                                    <c:Slant Width="22" Height="12" Background="{Binding}" />
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
@@ -161,9 +161,9 @@
                                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                                     <Button Theme="{StaticResource Skew}" IsVisible="{Binding Live}" Background="{StaticResource Yellow}" Foreground="{StaticResource YellowFg}"
                                                             FontWeight="ExtraBold" Content="Restore" Command="{Binding RestoreCommand}" />
-                                                    <Border Classes="skew" IsVisible="{Binding Gone}" Background="{StaticResource ErrorBg}" Padding="10,3" VerticalAlignment="Center">
+                                                    <c:Slant IsVisible="{Binding Gone}" Background="{StaticResource ErrorBg}" Padding="10,3" VerticalAlignment="Center">
                                                         <TextBlock Text="ROOM GONE" FontSize="10" FontWeight="ExtraBold" Foreground="{StaticResource ErrorFg}" />
-                                                    </Border>
+                                                    </c:Slant>
                                                     <Button Theme="{StaticResource Skew}" IsVisible="{Binding Gone}" Content="Save log" Command="{Binding SaveLogCommand}" />
                                                     <Button Theme="{StaticResource Skew}" Background="{StaticResource Chip}" Content="Discard" Command="{Binding DiscardCommand}" />
                                                 </StackPanel>

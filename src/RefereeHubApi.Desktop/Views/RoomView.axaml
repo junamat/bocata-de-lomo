@@ -125,14 +125,8 @@
             </DockPanel>
 
             <!-- match countdown -->
-            <Border Grid.Row="1" IsVisible="{Binding Counting}" Margin="28,12,28,0" Background="{StaticResource Go}" Padding="18,8">
-                <Border.RenderTransform>
-                    <SkewTransform AngleX="-10" />
-                </Border.RenderTransform>
+            <c:Slant Angle="10" Grid.Row="1" IsVisible="{Binding Counting}" Margin="28,12,28,0" Background="{StaticResource Go}" Padding="18,8">
                 <DockPanel>
-                    <DockPanel.RenderTransform>
-                        <SkewTransform AngleX="10" />
-                    </DockPanel.RenderTransform>
                     <Button DockPanel.Dock="Right" Theme="{StaticResource Skew}" Background="{StaticResource GoFg}" Foreground="#d8f7b8"
                             FontWeight="ExtraBold" Content="Stop countdown" Command="{Binding StopCountdownCommand}" />
                     <StackPanel Orientation="Horizontal" Spacing="14">
@@ -141,7 +135,7 @@
                         <TextBlock Classes="display" Text="{Binding CountdownClock}" FontSize="26" FontWeight="Medium" Foreground="{StaticResource GoFg}" />
                     </StackPanel>
                 </DockPanel>
-            </Border>
+            </c:Slant>
 
             <!-- current map and score -->
             <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="28,18,28,8">
@@ -186,7 +180,7 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:StatViewModel">
-                                    <Border Classes="skew" Background="#EB151B18" Padding="14,6" MinWidth="84">
+                                    <c:Slant Background="#EB151B18" Padding="14,6" MinWidth="84">
                                         <StackPanel>
                                             <TextBlock Classes="label" Text="{Binding Label}" Foreground="{StaticResource Text}" />
                                             <TextBlock Classes="display" FontSize="22" FontWeight="Medium">
@@ -195,11 +189,11 @@
                                                 <Run Text="{Binding Original}" FontSize="12" Foreground="{StaticResource Dim}" TextDecorations="Strikethrough" />
                                             </TextBlock>
                                         </StackPanel>
-                                    </Border>
+                                    </c:Slant>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
-                        <Border Classes="skew" Background="#EB151B18" Padding="14,6" MinWidth="84">
+                        <c:Slant Background="#EB151B18" Padding="14,6" MinWidth="84">
                             <StackPanel>
                                 <TextBlock Classes="label" Text="READY" Foreground="{StaticResource Text}" />
                                 <TextBlock Classes="display" FontSize="22" FontWeight="Medium">
@@ -207,7 +201,7 @@
                                     <Run Text="{Binding PlayerCount, StringFormat='/{0}'}" FontSize="12" Foreground="{StaticResource Muted}" />
                                 </TextBlock>
                             </StackPanel>
-                        </Border>
+                        </c:Slant>
                         <Button Theme="{StaticResource Skew}" Background="{StaticResource Chip}" MinHeight="52" Content="Edit item">
                             <Button.Flyout>
                                 <Flyout Opened="itemOpened">
@@ -236,13 +230,13 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Spacing="10" HorizontalAlignment="Right" VerticalAlignment="Bottom">
-                    <Border IsVisible="{Binding TimerRunning}" HorizontalAlignment="Right" Background="{StaticResource TimerBg}"
-                            BorderBrush="{StaticResource TimerLine}" BorderThickness="2" Padding="12,3" Classes="skew">
+                    <c:Slant IsVisible="{Binding TimerRunning}" HorizontalAlignment="Right" Background="{StaticResource TimerBg}"
+                            BorderBrush="{StaticResource TimerLine}" BorderThickness="2" Padding="12,3">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <TextBlock Text="PICK TIMER" FontSize="10" FontWeight="ExtraBold" LetterSpacing="1" Foreground="{StaticResource TimerFg}" VerticalAlignment="Center" />
                             <TextBlock Classes="display" Text="{Binding TimerText}" FontSize="20" FontWeight="Medium" />
                         </StackPanel>
-                    </Border>
+                    </c:Slant>
                     <StackPanel IsVisible="{Binding IsTeamVersus}" Spacing="10">
                         <StackPanel Orientation="Horizontal" Spacing="22" HorizontalAlignment="Right">
                             <StackPanel HorizontalAlignment="Right" Spacing="2">
@@ -279,7 +273,7 @@
                                 </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="IBrush">
-                                        <Border Classes="skew" Width="26" Height="14" Background="{Binding}" />
+                                        <c:Slant Width="26" Height="14" Background="{Binding}" />
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
@@ -344,7 +338,7 @@
                                                         </ItemsControl.ItemsPanel>
                                                         <ItemsControl.ItemTemplate>
                                                             <DataTemplate x:DataType="IBrush">
-                                                                <Border Classes="skew" Width="6" Height="14" Background="{Binding}" />
+                                                                <c:Slant Width="9" Height="14" Background="{Binding}" />
                                                             </DataTemplate>
                                                         </ItemsControl.ItemTemplate>
                                                     </ItemsControl>
@@ -371,10 +365,10 @@
                                                                         </ItemsPanelTemplate>
                                                                     </ItemsControl.ItemsPanel>
                                                                 </ItemsControl>
-                                                                <Border Grid.Column="3" Classes="skew" Width="84" Padding="0,3" Background="{Binding StatusBrush}" VerticalAlignment="Center">
+                                                                <c:Slant Grid.Column="3" Width="84" Padding="0,3" Background="{Binding StatusBrush}" VerticalAlignment="Center">
                                                                     <TextBlock Text="{Binding Status}" FontSize="10" FontWeight="ExtraBold" LetterSpacing="0.6"
                                                                                Foreground="{Binding StatusForeground}" HorizontalAlignment="Center" />
-                                                                </Border>
+                                                                </c:Slant>
                                                                 <Button Grid.Column="4" Theme="{StaticResource Icon}" Width="30" Height="30" Foreground="{StaticResource Muted}"
                                                                         AutomationProperties.Name="{Binding ActionsLabel}">
                                                                     <c:Icon Kind="more" />
@@ -447,13 +441,13 @@
                                 </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:PlaylistTileViewModel">
-                                        <Border Classes="skew" Background="{Binding Background}" BorderBrush="{Binding Border}" BorderThickness="2"
+                                        <c:Slant Background="{Binding Background}" BorderBrush="{Binding Border}" BorderThickness="2"
                                                 MinHeight="44" Padding="12,4" Opacity="{Binding Opacity}" ToolTip.Tip="{Binding Tooltip}">
-                                            <Border.ContextFlyout>
+                                            <c:Slant.ContextFlyout>
                                                 <MenuFlyout>
                                                     <MenuItem Header="Remove item" Command="{Binding RemoveCommand}" IsEnabled="{Binding CanRemove}" />
                                                 </MenuFlyout>
-                                            </Border.ContextFlyout>
+                                            </c:Slant.ContextFlyout>
                                             <Grid ColumnDefinitions="18,*,Auto" ColumnSpacing="8">
                                                 <TextBlock Classes="mono" FontSize="11" Text="{Binding Order}" Foreground="{StaticResource Dim}" VerticalAlignment="Center" />
                                                 <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
@@ -472,7 +466,7 @@
                                                 <TextBlock Grid.Column="2" Text="{Binding Tag}" FontSize="9" FontWeight="ExtraBold" LetterSpacing="0.6"
                                                            Foreground="{Binding TagBrush}" VerticalAlignment="Center" />
                                             </Grid>
-                                        </Border>
+                                        </c:Slant>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
@@ -546,7 +540,7 @@
                                         <DataTemplate x:DataType="vm:ActivityViewModel">
                                             <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,4">
                                                 <TextBlock Text="{Binding Time}" FontSize="11" Foreground="{StaticResource Dim}" Width="34" VerticalAlignment="Center" />
-                                                <Border Classes="skew" Width="6" Height="18" Background="{Binding Color}" />
+                                                <c:Slant Width="10" Height="18" Background="{Binding Color}" />
                                                 <TextBlock FontSize="13" VerticalAlignment="Center" Foreground="{StaticResource Body}" TextWrapping="Wrap">
                                                     <Run Text="{Binding Who}" FontWeight="Bold" Foreground="{Binding WhoBrush}" />
                                                     <Run Text="{Binding Text}" />
@@ -647,8 +641,12 @@
                     <Button Theme="{StaticResource Skew}" MinHeight="52" Padding="20,0" Background="{StaticResource ErrorBg}" Foreground="{StaticResource ErrorFg}"
                             FontWeight="ExtraBold" Content="Abort" Command="{Binding AbortCommand}" IsEnabled="{Binding CanAbort}"
                             ToolTip.Tip="Abort works only while a map is loading or playing" ToolTip.ShowOnDisabled="True" />
-                    <Border Classes="skew" Background="#F2151B18" MinHeight="52">
-                        <ItemsControl ItemsSource="{Binding Countdowns}" RenderTransform="{x:Null}">
+                    <!-- real skew (not Slant): the option buttons inside lean with it. Margin keeps the skewed corners in bounds. -->
+                    <Border Background="#F2151B18" MinHeight="52" Margin="6,0">
+                        <Border.RenderTransform>
+                            <SkewTransform AngleX="-12" />
+                        </Border.RenderTransform>
+                        <ItemsControl ItemsSource="{Binding Countdowns}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <StackPanel Orientation="Horizontal" />

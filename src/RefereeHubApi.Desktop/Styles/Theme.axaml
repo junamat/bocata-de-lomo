@@ -1,8 +1,9 @@
 <Styles xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:c="using:RefereeHubApi.Desktop.Controls">
 
     <Styles.Resources>
-        <!-- Parallelogram button: only the background is skewed, the content stays upright. -->
+        <!-- Parallelogram button: the background is a Slant drawn inside the button bounds, the content stays upright. -->
         <ControlTheme x:Key="Skew" TargetType="Button">
             <Setter Property="Background" Value="{StaticResource Purple}" />
             <Setter Property="Foreground" Value="{StaticResource Text}" />
@@ -15,12 +16,8 @@
             <Setter Property="Template">
                 <ControlTemplate>
                     <Panel>
-                        <Border Name="bg" Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
-                            <Border.RenderTransform>
-                                <SkewTransform AngleX="-12" />
-                            </Border.RenderTransform>
-                        </Border>
+                        <c:Slant Name="bg" Background="{TemplateBinding Background}"
+                                 BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" />
                         <ContentPresenter Name="PART_ContentPresenter"
                                           Content="{TemplateBinding Content}"
                                           ContentTemplate="{TemplateBinding ContentTemplate}"
@@ -31,17 +28,17 @@
                     </Panel>
                 </ControlTemplate>
             </Setter>
-            <Style Selector="^:pointerover /template/ Border#bg">
+            <Style Selector="^:pointerover /template/ c|Slant#bg">
                 <Setter Property="Opacity" Value="0.86" />
             </Style>
-            <Style Selector="^:pressed /template/ Border#bg">
+            <Style Selector="^:pressed /template/ c|Slant#bg">
                 <Setter Property="Opacity" Value="0.7" />
             </Style>
             <Style Selector="^:disabled">
                 <Setter Property="Opacity" Value="0.5" />
                 <Setter Property="Cursor" Value="No" />
             </Style>
-            <Style Selector="^:focus-visible /template/ Border#bg">
+            <Style Selector="^:focus-visible /template/ c|Slant#bg">
                 <Setter Property="BorderBrush" Value="{StaticResource Text}" />
                 <Setter Property="BorderThickness" Value="2" />
             </Style>
@@ -147,17 +144,6 @@
         <Setter Property="FontSize" Value="10" />
         <Setter Property="FontWeight" Value="ExtraBold" />
         <Setter Property="LetterSpacing" Value="0.4" />
-    </Style>
-    <!-- Parallelogram tag/stat block (non-interactive). -->
-    <Style Selector="Border.skew">
-        <Setter Property="RenderTransform">
-            <SkewTransform AngleX="-12" />
-        </Setter>
-    </Style>
-    <Style Selector="Border.skew > :is(Control)">
-        <Setter Property="RenderTransform">
-            <SkewTransform AngleX="12" />
-        </Setter>
     </Style>
 
     <Style Selector="TextBox">

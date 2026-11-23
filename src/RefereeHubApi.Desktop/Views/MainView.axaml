@@ -150,14 +150,8 @@
         </Border>
 
         <!-- server restarting -->
-        <Border Grid.Row="1" IsVisible="{Binding ShutdownVisible}" Margin="28,12,28,0" Background="{StaticResource Danger}" Padding="18,10">
-            <Border.RenderTransform>
-                <SkewTransform AngleX="-10" />
-            </Border.RenderTransform>
+        <c:Slant Angle="10" Grid.Row="1" IsVisible="{Binding ShutdownVisible}" Margin="28,12,28,0" Background="{StaticResource Danger}" Padding="18,10">
             <DockPanel>
-                <DockPanel.RenderTransform>
-                    <SkewTransform AngleX="10" />
-                </DockPanel.RenderTransform>
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="10">
                     <Button Theme="{StaticResource Skew}" Background="{StaticResource DangerFg}" Foreground="{StaticResource RedPale}"
                             Content="Reconnect" Command="{Binding ReconnectCommand}" />
@@ -170,7 +164,7 @@
                     <TextBlock Classes="display" Text="{Binding ShutdownClock}" FontSize="26" FontWeight="Medium" Foreground="{StaticResource DangerFg}" />
                 </StackPanel>
             </DockPanel>
-        </Border>
+        </c:Slant>
 
         <ContentControl Grid.Row="2" Content="{Binding Page}" />
 
