@@ -53,7 +53,7 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org/):
 - Types: `feat`, `fix`, `refactor`, `perf`, `test`, `docs`, `build`, `ci`, `chore`.
 - Scopes (optional): `lib`, `desktop`, `harness`, `visualtests`, `tests`, `docs`.
 - Summary in the imperative, lower case, no trailing period, about 70 characters at most.
-- Breaking changes get a `!` after the type/scope and a `BREAKING CHANGE:` line in the body.
+- Breaking changes get a `!` after the type/scope.
 
 Examples:
 
